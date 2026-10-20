@@ -12,7 +12,8 @@ import wr15_luban as L
 HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = HERE + "/girl_alicante.mp4"
 TMP = L.TMP; W, H, FPS = L.W, L.H, 25
-VID_END = 15.4; TOTAL = 17.9
+VID_END = 15.4; TOTAL = 17.6
+LOGO_T = 15.3                      # her last expression is not great: go to black / logo early
 PANEL_H = 1040                     # top panel height in split screen
 PANEL_SRC_Y = 175                   # rows of the Luban frame shown in the panel start here
 SHOT_CUT = 4.0                     # presenter shot change in the source video
@@ -29,9 +30,9 @@ def _grad():
 GRAD = _grad()
 
 # split amount over time: 0 = presenter full screen, 1 = panel + presenter below
-SPLIT = [(0.0, 0), (0.85, 0), (1.2, 1), (14.2, 1), (14.55, 0)]
+SPLIT = [(0.0, 0), (0.85, 0), (1.2, 1), (99, 1)]
 # the source video jumps at 3.96 s and 14.16 s: the panel covers the whole screen across both cuts
-COVER = [(0.0, 0), (3.45, 0), (3.75, 1), (4.15, 1), (4.45, 0), (13.8, 0), (14.05, 1), (14.2, 1), (14.55, 0)]
+COVER = [(0.0, 0), (3.45, 0), (3.75, 1), (4.15, 1), (4.45, 0), (13.8, 0), (14.05, 1), (99, 1)]   # from the second cut on: panel only (CTA, then logo)
 def split_k(t, keys=None):
     keys = keys or SPLIT
     for (a, ka), (b, kb) in zip(keys, keys[1:]):
@@ -45,7 +46,7 @@ def panel(t):
         fr = L.sc_hook_at(tt, pin=(t >= 1.0) * L.prog(t, 1.0, 0.45) * (1 - L.ease_io(L.prog(t, 2.4, 0.3))))
     else:
         fr = None
-        for i, (a, b, fn) in enumerate(L.SCENES[1:6]):
+        for i, (a, b, fn) in enumerate(L.SCENES[1:]):
             if a - L.XF <= t < b:
                 img = fn(t); fr = img if fr is None else Image.blend(fr, img, L.ease_io(L.prog(t, a - L.XF, L.XF)))
         if fr is None: fr = L.sc_photos(min(t, 14.2))
@@ -69,15 +70,13 @@ def compose(t):
             k = max(k, cv) if y_edge < H else 0
             line = Image.new("RGBA", (W, 4), L.GOLD + (int(200 * k),)); fr.alpha_composite(line, (0, max(0, y_edge - 2)))
         fr.alpha_composite(GRAD)
-        if t >= 14.3:                           # call to action over the presenter
-            L.draw_cta(fr, t, 1240, t0=0.2)
         ov = Image.new("RGBA", (W, H), (0, 0, 0, 0)); ov.alpha_composite(L.WM, L.WM_POS); L.draw_subs(ov, t); fr.alpha_composite(ov)
-    FB0, FB1 = VID_END - 0.35, VID_END + 0.1
+    FB0, FB1 = LOGO_T - 0.4, LOGO_T
     if t >= FB0:
         fr = Image.blend(fr, Image.new("RGBA", (W, H), (0, 0, 0, 255)), L.ease_io(L.prog(t, FB0, FB1 - FB0)))
-        lk = L.ease_out(L.prog(t, VID_END + 0.1, 1.0)) * (1 - L.ease_io(L.prog(t, TOTAL - 0.7, 0.6)))
+        lk = L.ease_out(L.prog(t, LOGO_T, 1.0)) * (1 - L.ease_io(L.prog(t, TOTAL - 0.7, 0.6)))
         if lk > 0:
-            sc = 0.97 + 0.03 * L.ease_out(L.prog(t, VID_END + 0.1, 1.4)); lg = L.END_LOGO
+            sc = 0.97 + 0.03 * L.ease_out(L.prog(t, LOGO_T, 1.4)); lg = L.END_LOGO
             lg = lg.resize((round(lg.width * sc), round(lg.height * sc)), Image.LANCZOS)
             fr.alpha_composite(L.with_alpha(lg, lk), ((W - lg.width) // 2, (H - lg.height) // 2 - 20))
     return fr.convert("RGB")
@@ -91,12 +90,12 @@ def make_sfx(path):
     put(3.12, pop(900, 300, 0.18), -16)
     for tt in (4.56, 5.04): put(tt, pop(1000, 600, 0.12), -18)
     for tt in (6.24, 6.96): put(tt + 0.05, pop(1200, 800, 0.1), -18)
-    put(8.55, pop(1400, 900, 0.1), -20); put(8.9, pop(1100, 600, 0.12), -20)
-    for i in range(5): put(9.42 + i * 0.08, pop(600, 250, 0.14), -19)
-    for tt in (11.0, 11.15, 11.3): put(tt, L.sfx_tick(), -16)
-    for tt in (11.0, 11.15, 11.3): put(tt, pop(1300, 900, 0.08), -20)
-    put(14.62 + 0.2, L.sfx_tick(), -12); put(14.64 + 0.2, pop(1300, 700, 0.12), -15)
-    put(VID_END + 0.1, L.sfx_boom(), -12); put(VID_END + 0.15, L.sfx_shimmer(), -24)
+    put(8.35, pop(1400, 900, 0.1), -20); put(8.6, pop(1100, 600, 0.12), -20)
+    for i in range(5): put(9.12 + i * 0.08, pop(600, 250, 0.14), -19)
+    for tt in (10.95, 11.1, 11.25): put(tt, L.sfx_tick(), -16)
+    for tt in (10.95, 11.1, 11.25): put(tt, pop(1300, 900, 0.08), -20)
+    put(14.62, L.sfx_tick(), -12); put(14.64, pop(1300, 700, 0.12), -15)
+    put(LOGO_T, L.sfx_boom(), -12); put(LOGO_T + 0.05, L.sfx_shimmer(), -24)
     import wave
     with wave.open(path, "wb") as f:
         f.setnchannels(2); f.setsampwidth(2); f.setframerate(SR); f.writeframes((np.clip(total, -1, 1) * 32767).astype("<i2").tobytes())

@@ -315,15 +315,15 @@ def sc_steel(t):                      # 7.85 - 9.6  gold wireframe of the frame 
     line = Image.new("RGBA", (CW, CH), (18, 18, 21, 255)); gl = Image.new("RGBA", (CW, CH), GOLD + (255,))
     kd = ease_io(prog(t, 7.6, 0.7)); m = np.clip((kd * (CW + 160) - np.arange(CW)[None, :]) / 160, 0, 1)
     gl.putalpha(Image.fromarray((np.array(g, np.float32) / 255 * np.repeat(m, CH, 0) * 255).astype(np.uint8))); line.alpha_composite(gl)
-    kp = ease_io(prog(t, 8.5, 0.55))
+    kp = ease_io(prog(t, 8.3, 0.5))
     c = wipe(line, photo, kp * (CW + 70), 70, line=0 < kp < 1) if kp > 0 else line
     put_card(fr, c)
-    r = chip("ACERO", prog(t, 8.9, 0.3) * (1 - ease_io(prog(t, 9.2, 0.12))), CARD_Y - CH / 2 - 70, icon="dot")
+    r = chip("ACERO", prog(t, 8.6, 0.3) * (1 - ease_io(prog(t, 8.95, 0.12))), CARD_Y - CH / 2 - 70, icon="dot")
     if r: fr.alpha_composite(*r)
     return fr
 
-LAYERS = [("Aluminio", (200, 203, 210), 9.42), ("PU 50 mm", GOLD, 9.5), ("Acero", (120, 124, 132), 9.58),
-          ("PU 50 mm", GOLD, 9.66), ("Interior", (240, 238, 232), 9.74)]
+LAYERS = [("Aluminio", (200, 203, 210), 9.12), ("PU 50 mm", GOLD, 9.2), ("Acero", (120, 124, 132), 9.28),
+          ("PU 50 mm", GOLD, 9.36), ("Interior", (240, 238, 232), 9.44)]
 def sc_insul(t):                      # 9.6 - 10.6  wall section: layers slide in, heat waves stop at the wall
     fr = BGI.copy(); ch = CH; im, d = ss_canvas(CW, ch, (20, 20, 23, 255)); s = SS
     widths = [44, 190, 56, 190, 60]; x = (CW - 540) // 2 + 60; top, bot = 80, ch - 120; f = font("Inter-SemiBold.otf", 28)
@@ -340,8 +340,8 @@ def sc_insul(t):                      # 9.6 - 10.6  wall section: layers slide i
             labels.append((name, x + wd / 2, k))
         x += wd
     # heat waves from the left, stopping at the outer skin
-    for i in range(6):
-        u = (t - 9.75 - i * 0.16) / 0.6
+    for i in range(7):
+        u = (t - 9.5 - i * 0.2) / 0.6
         if 0 < u < 1:
             a = int(230 * math.sin(math.pi * u)); yy = (190 + (i % 3) * 110) * s; x0 = lerp(40, 330, ease_out(u)) * s
             pts = [(x0 + j * 9 * s, yy + math.sin(j * 0.9 + t * 9) * 10 * s) for j in range(12)]
@@ -356,7 +356,7 @@ def sc_insul(t):                      # 9.6 - 10.6  wall section: layers slide i
 
 def sc_smart(t):                      # 10.95 - 12.0  real S70 interior + smart-home app card, switches turn on
     fr = BGI.copy(); z = 1.02 + 0.06 * prog(t, 10.7, 1.6)
-    on = [prog(t, t0, 0.2) for t0 in (11.0, 11.15, 11.3)]
+    on = [prog(t, t0, 0.2) for t0 in (10.95, 11.1, 11.25)]
     c = card_of(LIVING, z)
     c = ImageEnhance.Brightness(c.convert("RGB")).enhance(0.55 + 0.5 * ease_out(on[0])).convert("RGBA")
     if on[0] > 0: c.alpha_composite(Image.new("RGBA", (CW, CH), (255, 196, 120, int(36 * on[0]))))
@@ -390,8 +390,8 @@ def sc_smart(t):                      # 10.95 - 12.0  real S70 interior + smart-
 
 def sc_photos(t):                     # 12.0 - 14.27  "Tu casa, sin hipoteca eterna"
     fr = BGI.copy(); c = Image.new("RGBA", (CW, CH), (20, 20, 23, 255))
-    k = ease_io(prog(t, 13.55, 0.4))
-    if k < 1: c.alpha_composite(card_of(END1, 1.0 + 0.08 * prog(t, 12.6, 1.6)), (int(-k * CW * 0.35), 0))
+    k = 0.0   # one photo only: the smart-home card keeps most of this time
+    if k < 1: c.alpha_composite(card_of(END1, 1.0 + 0.08 * prog(t, 13.3, 1.0)), (int(-k * CW * 0.35), 0))
     if k > 0: c.alpha_composite(card_of(END2, 1.0 + 0.06 * prog(t, 13.55, 1.0)), (int((1 - k) * CW), 0))
     put_card(fr, c)
     return fr
@@ -419,8 +419,8 @@ def draw_cta(fr, t, cy, t0=0.0):
         fr.alpha_composite(ss_done(im, 330, 330), (int(x_ - 165), int(y_ - 165)))
     return fr
 
-SCENES = [(0.0, 2.95, sc_hook), (2.95, 7.85, sc_plan), (7.85, 9.4, sc_steel), (9.4, 10.85, sc_insul),
-          (10.85, 12.9, sc_smart), (12.9, 14.27, sc_photos), (14.27, 99, sc_cta)]
+SCENES = [(0.0, 2.95, sc_hook), (2.95, 7.85, sc_plan), (7.85, 9.15, sc_steel), (9.15, 10.85, sc_insul),
+          (10.85, 13.6, sc_smart), (13.6, 14.27, sc_photos), (14.27, 99, sc_cta)]
 XF = 0.28
 def compose(t):
     if t >= 15.6: fr = Image.new("RGBA", (W, H), (0, 0, 0, 255))
@@ -490,9 +490,9 @@ def make_sfx(path):
     put(3.12, sfx_pop(900, 300, 0.18), -15)
     for tt in (4.56, 5.04): put(tt, sfx_pop(1000, 600, 0.12), -17)
     for tt in (6.24, 6.96): put(tt + 0.05, sfx_pop(1200, 800, 0.1), -17)
-    put(8.55, sfx_pop(1400, 900, 0.1), -20); put(8.9, sfx_pop(1100, 600, 0.12), -19)
-    for i in range(5): put(9.42 + i * 0.08, sfx_pop(600, 250, 0.14), -18)
-    for tt in (11.0, 11.15, 11.3): put(tt, sfx_tick(), -15); put(tt + 0.01, sfx_pop(1300, 900, 0.08), -20)
+    put(8.35, sfx_pop(1400, 900, 0.1), -20); put(8.6, sfx_pop(1100, 600, 0.12), -19)
+    for i in range(5): put(9.12 + i * 0.08, sfx_pop(600, 250, 0.14), -18)
+    for tt in (10.95, 11.1, 11.25): put(tt, sfx_tick(), -15); put(tt + 0.01, sfx_pop(1300, 900, 0.08), -20)
     put(14.62, sfx_tick(), -11); put(14.64, sfx_pop(1300, 700, 0.12), -14)
     put(15.95, sfx_boom(), -12); put(16.0, sfx_shimmer(), -24)
     with wave.open(path, "wb") as f:
