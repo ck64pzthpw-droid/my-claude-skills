@@ -49,8 +49,8 @@ def shadow_of(im, blur, a):
 
 # ---------------------------------------------------------------- layout
 CW, CH = 980, 620                        # photo card
-CARD_Y = 690                             # card centre
-SUB_CY, MAXW = 1430, 820
+CARD_Y = 860                             # card centre
+SUB_CY, MAXW = int(os.environ.get("SUB_CY", 1330)), 820
 
 def make_bg():
     a = np.zeros((H, W, 3), np.float32) + np.array(BG, np.float32)
@@ -114,7 +114,7 @@ SKETCH = cover(HERE + "/refs/sketch_s70_aligned.png", CW * 2, CH * 2, 0.5, 0.55)
 _fs = ImageOps.grayscale(cover(HERE + "/refs/sketch_frame.png", CW, CH, 0.5, 0.45))
 FRAME_INK = Image.fromarray(np.clip((255 - np.array(_fs, np.float32)) * 1.5, 0, 255).astype(np.uint8))
 FRAME = cover(IMG + "/insulation.jpg", CW * 2, CH * 2, 0.45, 0.6)
-LIVING = cover(IMG + "/s70-2bed-living.jpg", CW * 2, CH * 2, 0.5, 0.5)
+LIVING = cover(IMG + "/s70-living.jpg", CW * 2, CH * 2, 0.5, 0.55)   # straight lens; 2bed-living is wide-angle
 KITCHEN = cover(IMG + "/s70-kitchen.jpg", CW, CH * 2, 0.5, 0.42)
 BATH = cover(IMG + "/s70-bath.jpg", CW, CH * 2, 0.55, 0.45)
 END1 = cover(IMG + "/wr-hero.jpg", CW * 2, CH * 2, 0.5, 0.7, crop=(0, 470, 1600, 1289))
@@ -135,14 +135,14 @@ ROOMS = {"bed1": (1012, 152, 1314, 444), "bed2": (209, 152, 509, 444),
          "kit": (709, 152, 1002, 444), "bath": (521, 152, 704, 362)}
 
 # ---------------------------------------------------------------- subtitles
-WL = [("¿Tu", 0.0), ("primera", 0.32), ("casa", 0.56), ("en", 0.80), ("Alicante?", 0.96),
+WL = [("Tu", 0.0), ("primera", 0.32), ("casa", 0.56), ("en", 0.80), ("Alicante?", 0.96),
       ("Mira", 2.0), ("esto", 2.4), ("38", 3.12), ("metros,", 3.84),
       ("una", 4.56), ("o", 4.88), ("dos", 5.04), ("habitaciones,", 5.28),
       ("cocina", 6.24), ("y", 6.8), ("baño", 6.96), ("completos,", 7.44),
       ("estructura", 8.32), ("de", 8.88), ("acero,", 9.04), ("buen", 9.6), ("aislamiento", 9.84),
       ("y", 10.56), ("casa", 10.8), ("inteligente", 11.2),
       ("Tu", 12.16), ("casa,", 12.4), ("sin", 12.88), ("hipoteca", 13.2), ("eterna", 13.84)]
-CH_TXT = ["¿Tu primera casa / =en Alicante?", "Mira / =esto", "=38 metros,", "una o dos / =habitaciones,",
+CH_TXT = ["Tu primera casa / =en Alicante?", "Mira / =esto", "=38 metros,", "una o dos / =habitaciones,",
           "=cocina y baño / completos,", "estructura de / =acero,", "buen / =aislamiento", "y casa / =inteligente",
           "Tu casa, / =sin hipoteca / eterna"]
 F_SM = font("Inter-Bold.otf", 46); BIG_FONT = FONT + "InterDisplay-Bold.otf"
@@ -241,6 +241,8 @@ def card_of(big, z, cx=0.5, cy=0.5): return zoom(big, z, cx, cy).resize((CW, CH)
 
 # ---------------------------------------------------------------- scenes
 def sc_hook(t):                       # 0 - 2.95  sketch draws in, becomes the real S70, Alicante pin, push-in
+    return sc_hook_at(t)
+def sc_hook_at(t, pin=None):
     fr = BGI.copy()
     z = 1.0 + 0.04 * prog(t, 0, 2.0) + 0.16 * ease_io(prog(t, 2.0, 0.9))
     paper = Image.new("RGBA", (CW, CH), PAPER + (255,))
@@ -249,7 +251,7 @@ def sc_hook(t):                       # 0 - 2.95  sketch draws in, becomes the r
     if kp > 0: c = wipe(c, card_of(HERO, z, 0.5, 0.55), kp * (CW + 70), 70, line=kp < 1)
     kin = ease_out(prog(t, 0.0, 0.45))
     put_card(fr, c, scale=0.94 + 0.06 * kin + 0.05 * ease_io(prog(t, 2.0, 0.9)), a=kin)
-    r = chip("ALICANTE", prog(t, 0.96, 0.45) * (1 - ease_io(prog(t, 2.0, 0.3))), CARD_Y + CH / 2 + 74)
+    r = chip("ALICANTE", prog(t, 0.96, 0.45) * (1 - ease_io(prog(t, 2.0, 0.3))) if pin is None else pin, CARD_Y - CH / 2 - 70)
     if r: fr.alpha_composite(*r)
     return fr
 
@@ -257,7 +259,7 @@ PLW = CW; PLH = round(PLAN.height * CW / PLAN.width)       # plan drawn at card 
 def plan_xy(x, y): return ((x - PX0) * PLW / PLAN.width, (y - PY0) * PLH / PLAN.height)
 F_BIG = ImageFont.truetype(BIG_FONT, 190); F_M2 = ImageFont.truetype(BIG_FONT, 92)
 def sc_plan(t):                       # 2.95 - 7.85  38 m2 counter, plan, bedrooms 1/2, kitchen + bath ticks
-    fr = BGI.copy(); py = CARD_Y + 190
+    fr = BGI.copy(); py = CARD_Y + 120
     # plan draws in left -> right, then stays
     kd = ease_io(prog(t, 2.95, 0.9))
     pl = PLAN.resize((PLW, PLH), Image.LANCZOS).convert("RGBA")
@@ -316,7 +318,7 @@ def sc_steel(t):                      # 7.85 - 9.6  gold wireframe of the frame 
     kp = ease_io(prog(t, 8.75, 0.6))
     c = wipe(line, photo, kp * (CW + 70), 70, line=0 < kp < 1) if kp > 0 else line
     put_card(fr, c)
-    r = chip("ACERO", prog(t, 9.0, 0.35) * (1 - ease_io(prog(t, 9.45, 0.15))), CARD_Y + CH / 2 + 74, icon="dot")
+    r = chip("ACERO", prog(t, 9.0, 0.35) * (1 - ease_io(prog(t, 9.45, 0.15))), CARD_Y - CH / 2 - 70, icon="dot")
     if r: fr.alpha_composite(*r)
     return fr
 
@@ -327,9 +329,9 @@ def sc_insul(t):                      # 9.6 - 10.6  wall section: layers slide i
     widths = [44, 190, 56, 190, 60]; x = (CW - 540) // 2 + 60; top, bot = 80, ch - 120; f = font("Inter-SemiBold.otf", 28)
     labels = []
     for (name, col, st), wd in zip(LAYERS, widths):
-        k = ease_out(prog(t, st, 0.3))
+        k = ease_out(prog(t, st, 0.22))
         if k > 0:
-            dy = (1 - k) * 220; a = int(255 * k)
+            dy = (1 - k) * 90; a = int(255 * k)
             d.rectangle([x * s, (top - dy) * s, (x + wd) * s, (bot - dy) * s], fill=col + (a,))
             if col == GOLD:   # foam texture
                 for j in range(14):
@@ -338,10 +340,10 @@ def sc_insul(t):                      # 9.6 - 10.6  wall section: layers slide i
             labels.append((name, x + wd / 2, k))
         x += wd
     # heat waves from the left, stopping at the outer skin
-    for i in range(3):
-        u = (t - 9.95 - i * 0.14) / 0.6
+    for i in range(6):
+        u = (t - 9.95 - i * 0.16) / 0.6
         if 0 < u < 1:
-            a = int(230 * math.sin(math.pi * u)); yy = (190 + i * 110) * s; x0 = lerp(40, 330, ease_out(u)) * s
+            a = int(230 * math.sin(math.pi * u)); yy = (190 + (i % 3) * 110) * s; x0 = lerp(40, 330, ease_out(u)) * s
             pts = [(x0 + j * 9 * s, yy + math.sin(j * 0.9 + t * 9) * 10 * s) for j in range(12)]
             d.line(pts, fill=(255, 120, 70, a), width=6 * s)
     d.line([(60 * s, (bot + 18) * s), ((CW - 60) * s, (bot + 18) * s)], fill=(255, 255, 255, 40), width=2 * s)
@@ -352,42 +354,38 @@ def sc_insul(t):                      # 9.6 - 10.6  wall section: layers slide i
     put_card(fr, c)
     return fr
 
-def icon_chip(kind, k):
-    sz = 130; im, d = ss_canvas(sz, sz); s = SS; c0 = sz / 2 * s
-    d.ellipse([4 * s, 4 * s, (sz - 4) * s, (sz - 4) * s], fill=(255, 255, 255, 242)); ink = (24, 24, 26, 255); lw = 8 * s
-    if kind == "bulb":
-        d.ellipse([c0 - 22 * s, c0 - 34 * s, c0 + 22 * s, c0 + 10 * s], outline=GOLD + (255,), width=lw, fill=GOLD + (90,))
-        for yy in (20, 30): d.line([(c0 - 12 * s, c0 + yy * s), (c0 + 12 * s, c0 + yy * s)], fill=ink, width=lw)
-    elif kind == "temp":
-        d.arc([c0 - 34 * s, c0 - 34 * s, c0 + 34 * s, c0 + 34 * s], 135, 405, fill=ink, width=lw)
-        d.arc([c0 - 34 * s, c0 - 34 * s, c0 + 34 * s, c0 + 34 * s], 135, 300, fill=GOLD + (255,), width=lw)
-        d.ellipse([c0 - 8 * s, c0 - 8 * s, c0 + 8 * s, c0 + 8 * s], fill=ink)
-    else:
-        d.rounded_rectangle([c0 - 25 * s, c0 - 6 * s, c0 + 25 * s, c0 + 34 * s], 7 * s, fill=ink)
-        d.arc([c0 - 17 * s, c0 - 37 * s, c0 + 17 * s, c0 + 9 * s], 180, 360, fill=ink, width=lw)
-        d.ellipse([c0 - 6 * s, c0 + 8 * s, c0 + 6 * s, c0 + 20 * s], fill=GOLD + (255,))
-    c = ss_done(im, sz, sz); scl = 0.6 + 0.4 * ease_out(k) + 0.08 * math.sin(math.pi * clamp(k))
-    return with_alpha(c.resize((round(sz * scl), round(sz * scl)), Image.LANCZOS), ease_out(k))
-def sc_smart(t):                      # 10.6 - 12.0  real S70 interior, lights come on, smart-home icons
-    fr = BGI.copy(); z = 1.02 + 0.06 * prog(t, 10.3, 1.9)
+def sc_smart(t):                      # 10.95 - 12.0  real S70 interior + smart-home app card, switches turn on
+    fr = BGI.copy(); z = 1.02 + 0.06 * prog(t, 10.7, 1.6)
+    on = [prog(t, t0, 0.22) for t0 in (11.12, 11.3, 11.48)]
     c = card_of(LIVING, z)
-    kl = ease_out(prog(t, 10.8, 0.45))
-    c = ImageEnhance.Brightness(c.convert("RGB")).enhance(0.45 + 0.6 * kl).convert("RGBA")
-    if kl > 0:      # warm glow
-        glow = Image.new("RGBA", (CW, CH), (255, 196, 120, int(40 * kl))); c.alpha_composite(glow)
+    c = ImageEnhance.Brightness(c.convert("RGB")).enhance(0.55 + 0.5 * ease_out(on[0])).convert("RGBA")
+    if on[0] > 0: c.alpha_composite(Image.new("RGBA", (CW, CH), (255, 196, 120, int(36 * on[0]))))
+    # app panel slides up into the card
+    pw, ph = 470, 470; ki = ease_out(prog(t, 10.95, 0.4))
+    im, d = ss_canvas(pw, ph); s = SS
+    d.rounded_rectangle([0, 0, pw * s - 1, ph * s - 1], 40 * s, fill=(255, 255, 255, 246))
+    pnl = ss_done(im, pw, ph); dd = ImageDraw.Draw(pnl)
+    f1 = font("Inter-Bold.otf", 34); f2 = font("Inter-SemiBold.otf", 30); f3 = font("Inter-Medium.otf", 24)
+    dd.text((40, 34), "Mi casa", font=f1, fill=(24, 24, 26, 255))
+    dd.text((40, 80), "WhiteRoom Smart", font=f3, fill=(140, 140, 146, 255))
+    rows = [("Luces", "Encendidas"), ("Clima", "22 °C"), ("Cerradura", "Cerrada")]
+    im2, d2 = ss_canvas(pw, ph)
+    for i, ((lab, val), k) in enumerate(zip(rows, on)):
+        y = 140 + i * 106; x = 28; w = pw - 56
+        d2.rounded_rectangle([x * s, y * s, (x + w) * s, (y + 92) * s], 24 * s, fill=(244, 243, 239, 255))
+        tx, ty = x + w - 112, y + 23; e = ease_io(k)
+        d2.rounded_rectangle([tx * s, ty * s, (tx + 88) * s, (ty + 46) * s], 23 * s,
+            fill=tuple(int(lerp(a, b, e)) for a, b in zip((206, 206, 210), GOLD)) + (255,))
+        cx = lerp(tx + 23, tx + 65, e); d2.ellipse([(cx - 18) * s, (ty + 5) * s, (cx + 18) * s, (ty + 41) * s], fill=(255, 255, 255, 255))
+    rl = ss_done(im2, pw, ph); pnl.alpha_composite(rl); dd = ImageDraw.Draw(pnl)
+    for i, ((lab, val), k) in enumerate(zip(rows, on)):
+        y = 140 + i * 106
+        dd.text((54, y + 14), lab, font=f2, fill=(24, 24, 26, 255))
+        dd.text((54, y + 52), val if k > 0.5 else "—", font=f3, fill=(GOLD if k > 0.5 else (150, 150, 155)) + (255,))
+    sh, pad = shadow_of(pnl, 20, 0.5 * ki)
+    px = CW - pw - 40; py_ = int(CH - ph - 40 + (1 - ki) * 160)
+    c.alpha_composite(sh, (px - pad, py_ - pad + 12)); c.alpha_composite(with_alpha(pnl, ki), (px, py_))
     put_card(fr, c)
-    top = (W // 2, CARD_Y - CH // 2 - 40); im, d = ss_canvas(W, 300); s = SS
-    for i in range(3):
-        k = prog(t, 10.95 + i * 0.12, 0.3)
-        if k > 0:
-            r = (40 + i * 38) * s; a = int(240 * ease_out(k) * (0.7 + 0.3 * math.sin(t * 6 - i))); cy = 230 * s
-            d.arc([top[0] * s - r, cy - r, top[0] * s + r, cy + r], 225, 315, fill=GOLD + (a,), width=10 * s)
-    k0 = ease_out(prog(t, 10.9, 0.3))
-    d.ellipse([(top[0] - 11) * s, 219 * s, (top[0] + 11) * s, 241 * s], fill=GOLD + (int(255 * k0),))
-    fr.alpha_composite(ss_done(im, W, 300), (0, top[1] - 230))
-    for kind, (x, y), t0 in (("bulb", (150, CARD_Y + 160), 11.0), ("temp", (W - 150, CARD_Y - 150), 11.15), ("lock", (W - 170, CARD_Y + 230), 11.3)):
-        k = prog(t, t0, 0.35)
-        if k > 0: ic = icon_chip(kind, k); fr.alpha_composite(ic, (int(x - ic.width / 2), int(y - ic.height / 2)))
     return fr
 
 def sc_photos(t):                     # 12.0 - 14.27  "Tu casa, sin hipoteca eterna"
@@ -400,27 +398,29 @@ def sc_photos(t):                     # 12.0 - 14.27  "Tu casa, sin hipoteca ete
 
 F_BTN = font("Inter-Bold.otf", 66)
 def sc_cta(t):                        # 14.27 - 15.9  "¡Escríbenos!"
-    fr = BGI.copy()
+    return draw_cta(BGI.copy(), t, H // 2)
+def draw_cta(fr, t, cy, t0=0.0):
+    t = t - t0
     kin = ease_out(prog(t, 14.3, 0.45)); press = math.sin(math.pi * prog(t, 14.62, 0.22)) if 14.62 <= t <= 14.84 else 0
     bw, bh = 700, 166; im, d = ss_canvas(bw, bh)
-    d.rounded_rectangle([0, 0, bw * SS - 1, bh * SS - 1], bh * SS / 2, fill=GOLD + (255,))
-    btn = ss_done(im, bw, bh); txt = "¡Escríbenos!"
+    d.rounded_rectangle([0, 0, bw * SS - 1, bh * SS - 1], bh * SS / 2, fill=(255, 255, 255, 255))
+    btn = ss_done(im, bw, bh); txt = "Escríbenos!"
     ImageDraw.Draw(btn).text(((bw - F_BTN.getlength(txt)) / 2, 40), txt, font=F_BTN, fill=(20, 20, 22, 255))
     sc = (0.85 + 0.15 * kin) * (1 - 0.06 * press); b = btn.resize((round(bw * sc), round(bh * sc)), Image.LANCZOS)
-    sh, pad = shadow_of(b, 26, 0.5 * kin); x, y = (W - b.width) // 2, int(CARD_Y + 60 - b.height / 2)
+    sh, pad = shadow_of(b, 26, 0.5 * kin); x, y = (W - b.width) // 2, int(cy - b.height / 2)
     fr.alpha_composite(sh, (x - pad, y - pad + 18)); fr.alpha_composite(with_alpha(b, kin), (x, y))
     rp = prog(t, 14.62, 0.6); kc = prog(t, 14.25, 0.37); kx = 1 - ease_io(prog(t, 15.05, 0.3))
     if kc > 0 and kx > 0:
-        x_ = lerp(900, 640, ease_io(kc)); y_ = lerp(CARD_Y + 520, CARD_Y + 95, ease_io(kc))
+        x_ = lerp(980, 820, ease_io(kc)); y_ = lerp(cy + 460, cy + 40, ease_io(kc))
         im, d = ss_canvas(330, 330); c0 = 165 * SS; r = 42 * SS * (1 - 0.18 * press)
-        d.ellipse([c0 - r, c0 - r, c0 + r, c0 + r], fill=(255, 255, 255, int(170 * kx)), outline=(255, 255, 255, int(240 * kx)), width=10 * SS)
+        d.ellipse([c0 - r, c0 - r, c0 + r, c0 + r], fill=GOLD + (int(150 * kx),), outline=GOLD + (int(255 * kx),), width=10 * SS)
         if 0 < rp < 1:
-            R_ = (42 + 105 * ease_out(rp)) * SS; d.ellipse([c0 - R_, c0 - R_, c0 + R_, c0 + R_], outline=(255, 255, 255, int(220 * (1 - rp) * kx)), width=9 * SS)
+            R_ = (42 + 105 * ease_out(rp)) * SS; d.ellipse([c0 - R_, c0 - R_, c0 + R_, c0 + R_], outline=GOLD + (int(220 * (1 - rp) * kx),), width=9 * SS)
         fr.alpha_composite(ss_done(im, 330, 330), (int(x_ - 165), int(y_ - 165)))
     return fr
 
-SCENES = [(0.0, 2.95, sc_hook), (2.95, 7.85, sc_plan), (7.85, 9.6, sc_steel), (9.6, 10.6, sc_insul),
-          (10.6, 12.0, sc_smart), (12.0, 14.27, sc_photos), (14.27, 99, sc_cta)]
+SCENES = [(0.0, 2.95, sc_hook), (2.95, 7.85, sc_plan), (7.85, 9.6, sc_steel), (9.6, 10.95, sc_insul),
+          (10.95, 12.0, sc_smart), (12.0, 14.27, sc_photos), (14.27, 99, sc_cta)]
 XF = 0.28
 def compose(t):
     if t >= 15.6: fr = Image.new("RGBA", (W, H), (0, 0, 0, 255))
@@ -492,8 +492,7 @@ def make_sfx(path):
     for tt in (6.24, 6.96): put(tt + 0.05, sfx_pop(1200, 800, 0.1), -17)
     put(8.8, sfx_pop(1400, 900, 0.1), -20); put(9.0, sfx_pop(1100, 600, 0.12), -19)
     for i in range(5): put(9.55 + i * 0.12, sfx_pop(600, 250, 0.14), -18)
-    put(10.82, sfx_tick(), -14)
-    for tt in (11.0, 11.15, 11.3): put(tt, sfx_pop(1300, 900, 0.1), -18)
+    for tt in (11.12, 11.3, 11.48): put(tt, sfx_tick(), -15); put(tt + 0.01, sfx_pop(1300, 900, 0.08), -20)
     put(14.62, sfx_tick(), -11); put(14.64, sfx_pop(1300, 700, 0.12), -14)
     put(15.95, sfx_boom(), -12); put(16.0, sfx_shimmer(), -24)
     with wave.open(path, "wb") as f:
