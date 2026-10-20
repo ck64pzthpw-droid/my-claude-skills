@@ -46,7 +46,9 @@ def panel(t):
         fr = L.sc_hook_at(tt, pin=(t >= 1.0) * L.prog(t, 1.0, 0.45) * (1 - L.ease_io(L.prog(t, 2.4, 0.3))))
     else:
         fr = None
-        for i, (a, b, fn) in enumerate(L.SCENES[1:]):
+        # CTA drawn PANEL_SRC_Y lower so that after the panel crop the button sits at the true screen centre
+        scenes = L.SCENES[1:6] + [(L.SCENES[6][0], 99, lambda tt: L.draw_cta(L.BGI.copy(), tt, H // 2 + PANEL_SRC_Y))]
+        for i, (a, b, fn) in enumerate(scenes):
             if a - L.XF <= t < b:
                 img = fn(t); fr = img if fr is None else Image.blend(fr, img, L.ease_io(L.prog(t, a - L.XF, L.XF)))
         if fr is None: fr = L.sc_photos(min(t, 14.2))
@@ -90,10 +92,10 @@ def make_sfx(path):
     put(3.12, pop(900, 300, 0.18), -16)
     for tt in (4.56, 5.04): put(tt, pop(1000, 600, 0.12), -18)
     for tt in (6.24, 6.96): put(tt + 0.05, pop(1200, 800, 0.1), -18)
-    put(8.35, pop(1400, 900, 0.1), -20); put(8.6, pop(1100, 600, 0.12), -20)
-    for i in range(5): put(9.12 + i * 0.08, pop(600, 250, 0.14), -19)
-    for tt in (10.95, 11.1, 11.25): put(tt, L.sfx_tick(), -16)
-    for tt in (10.95, 11.1, 11.25): put(tt, pop(1300, 900, 0.08), -20)
+    put(8.1, pop(1400, 900, 0.1), -20); put(8.45, pop(1100, 600, 0.12), -20)
+    for i in range(5): put(9.27 + i * 0.08, pop(600, 250, 0.14), -19)
+    for tt in (11.15, 11.28, 11.41): put(tt, L.sfx_tick(), -16)
+    for tt in (11.15, 11.28, 11.41): put(tt, pop(1300, 900, 0.08), -20)
     put(14.62, L.sfx_tick(), -12); put(14.64, pop(1300, 700, 0.12), -15)
     put(LOGO_T, L.sfx_boom(), -12); put(LOGO_T + 0.05, L.sfx_shimmer(), -24)
     import wave
