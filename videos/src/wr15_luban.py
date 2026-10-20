@@ -472,7 +472,7 @@ def sfx_reveal():
     return np.stack([y, y], 1), 0.75
 def sfx_boom():
     d = 1.6; n = int(d * SR); t = np.arange(n) / SR
-    y = np.sin(2 * np.pi * (48 + 30 * np.exp(-t * 8)) * t) * np.exp(-t * 2.6) + sfx_whoosh(d, 80, 400)[:, 0] * 0.25 * np.exp(-t * 4)
+    y = np.sin(2 * np.pi * (48 + 30 * np.exp(-t * 8)) * t) * np.exp(-t * 2.6) 
     return np.stack([y, y], 1)
 def sfx_shimmer():
     d = 2.2; n = int(d * SR); t = np.arange(n) / SR; y = np.zeros(n)
@@ -483,17 +483,16 @@ def make_sfx(path):
     total = np.zeros((int(TOTAL * SR) + SR * 2, 2))
     def put(t, snd, g):
         i = max(0, int(t * SR)); seg = snd * db(g); total[i:i + len(seg)] += seg[:len(total) - i]
-    Wl = sfx_whoosh(); Ws = sfx_whoosh(0.4, 400, 4000); RV, pre = sfx_reveal()
-    put(0.0, Ws, -22); put(0.97 - pre, RV, -14); put(0.98, sfx_pop(1100, 600, 0.12), -19); put(2.0, Wl, -18)
-    for a, b, fn in SCENES[1:]: put(a - 0.35, Ws, -20)
+    # no noise-based sounds (whoosh / reveal swell): Polina disliked the hiss
+    put(0.97, sfx_pop(1400, 900, 0.1), -20); put(0.98, sfx_pop(1100, 600, 0.12), -19)
     put(3.12, sfx_pop(900, 300, 0.18), -15)
     for tt in (4.56, 5.04): put(tt, sfx_pop(1000, 600, 0.12), -17)
     for tt in (6.24, 6.96): put(tt + 0.05, sfx_pop(1200, 800, 0.1), -17)
-    put(8.55 - pre, RV, -16); put(9.0, sfx_pop(1100, 600, 0.12), -19)
+    put(8.6, sfx_pop(1400, 900, 0.1), -20); put(9.0, sfx_pop(1100, 600, 0.12), -19)
     for i in range(5): put(9.55 + i * 0.12, sfx_pop(600, 250, 0.14), -18)
     put(10.82, sfx_tick(), -14)
     for tt in (11.0, 11.15, 11.3): put(tt, sfx_pop(1300, 900, 0.1), -18)
-    put(13.15, Ws, -21); put(14.62, sfx_tick(), -11); put(14.64, sfx_pop(1300, 700, 0.12), -14)
+    put(14.62, sfx_tick(), -11); put(14.64, sfx_pop(1300, 700, 0.12), -14)
     put(15.95, sfx_boom(), -12); put(16.0, sfx_shimmer(), -24)
     with wave.open(path, "wb") as f:
         f.setnchannels(2); f.setsampwidth(2); f.setframerate(SR); f.writeframes((np.clip(total, -1, 1) * 32767).astype("<i2").tobytes())
