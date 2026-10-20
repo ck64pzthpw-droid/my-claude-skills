@@ -29,9 +29,12 @@ def _grad():
 GRAD = _grad()
 
 # split amount over time: 0 = presenter full screen, 1 = panel + presenter below
-SPLIT = [(0.0, 0), (0.85, 0), (1.2, 1), (11.95, 1), (12.3, 1), (13.95, 1), (14.3, 0)]
-def split_k(t):
-    for (a, ka), (b, kb) in zip(SPLIT, SPLIT[1:]):
+SPLIT = [(0.0, 0), (0.85, 0), (1.2, 1), (14.2, 1), (14.55, 0)]
+# the source video jumps at 3.96 s and 14.16 s: the panel covers the whole screen across both cuts
+COVER = [(0.0, 0), (3.45, 0), (3.75, 1), (4.15, 1), (4.45, 0), (13.8, 0), (14.05, 1), (14.2, 1), (14.55, 0)]
+def split_k(t, keys=None):
+    keys = keys or SPLIT
+    for (a, ka), (b, kb) in zip(keys, keys[1:]):
         if a <= t <= b: return L.lerp(ka, kb, L.ease_io((t - a) / (b - a)))
     return 0
 
@@ -48,24 +51,26 @@ def panel(t):
         if fr is None: fr = L.sc_photos(min(t, 14.2))
         if t < 2.95 + L.XF:
             fr = Image.blend(L.sc_hook_at(0.95 + (t - 2.0)), fr, L.ease_io(L.prog(t, 2.95, L.XF)))
-    return fr.crop((0, PANEL_SRC_Y, W, PANEL_SRC_Y + PANEL_H))
+    return fr.crop((0, PANEL_SRC_Y, W, PANEL_SRC_Y + H))
 
 def compose(t):
     if t >= VID_END:
         fr = Image.new("RGBA", (W, H), (0, 0, 0, 255))
     else:
-        g = girl_frame(t); k = split_k(t)
+        g = girl_frame(t); k = split_k(t); cv = split_k(t, COVER)
         fr = Image.new("RGBA", (W, H), L.BG + (255,))
-        if k <= 0.001: fr.alpha_composite(g)
+        if k <= 0.001 and cv <= 0.001: fr.alpha_composite(g)
         else:
-            y_edge = int(PANEL_H * k); dy = int((PANEL_H - girl_y0(t)) * k)
-            fr.alpha_composite(g, (0, dy))
-            p = panel(t).crop((0, PANEL_H - y_edge, W, PANEL_H)) if y_edge > 0 else None
-            if p: fr.alpha_composite(p, (0, 0))
+            y_edge = int(PANEL_H * k + (H - PANEL_H) * cv); dy = int((PANEL_H - girl_y0(t)) * k + (H - PANEL_H) * cv)
+            if y_edge < H: fr.alpha_composite(g, (0, dy))
+            pf = panel(t); bg = Image.new("RGBA", pf.size, L.BG + (255,)); bg.alpha_composite(pf); pf = bg
+            p = pf.crop((0, PANEL_H - y_edge, W, PANEL_H)) if y_edge <= PANEL_H else pf.crop((0, 0, W, y_edge))
+            if y_edge > 0: fr.alpha_composite(p, (0, 0))
+            k = max(k, cv) if y_edge < H else 0
             line = Image.new("RGBA", (W, 4), L.GOLD + (int(200 * k),)); fr.alpha_composite(line, (0, max(0, y_edge - 2)))
         fr.alpha_composite(GRAD)
-        if t >= 13.95:                          # call to action over the presenter
-            L.draw_cta(fr, t, 1240, t0=-0.3)
+        if t >= 14.3:                           # call to action over the presenter
+            L.draw_cta(fr, t, 1240, t0=0.2)
         ov = Image.new("RGBA", (W, H), (0, 0, 0, 0)); ov.alpha_composite(L.WM, L.WM_POS); L.draw_subs(ov, t); fr.alpha_composite(ov)
     FB0, FB1 = VID_END - 0.35, VID_END + 0.1
     if t >= FB0:
@@ -90,7 +95,7 @@ def make_sfx(path):
     for i in range(5): put(9.55 + i * 0.12, pop(600, 250, 0.14), -19)
     for tt in (11.12, 11.3, 11.48): put(tt, L.sfx_tick(), -16)
     for tt in (11.12, 11.3, 11.48): put(tt, pop(1300, 900, 0.08), -20)
-    put(14.62 + 0.3, L.sfx_tick(), -12); put(14.64 + 0.3, pop(1300, 700, 0.12), -15)
+    put(14.62 + 0.2, L.sfx_tick(), -12); put(14.64 + 0.2, pop(1300, 700, 0.12), -15)
     put(VID_END + 0.1, L.sfx_boom(), -12); put(VID_END + 0.15, L.sfx_shimmer(), -24)
     import wave
     with wave.open(path, "wb") as f:
