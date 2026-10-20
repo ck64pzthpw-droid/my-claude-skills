@@ -88,8 +88,8 @@ def make_sfx(path):
     for tt in (6.24, 6.96): put(tt + 0.05, pop(1200, 800, 0.1), -18)
     put(8.8, pop(1400, 900, 0.1), -20); put(9.0, pop(1100, 600, 0.12), -20)
     for i in range(5): put(9.55 + i * 0.12, pop(600, 250, 0.14), -19)
-    put(10.82, L.sfx_tick(), -15)
-    for tt in (11.0, 11.15, 11.3): put(tt, pop(1300, 900, 0.1), -19)
+    for tt in (11.12, 11.3, 11.48): put(tt, L.sfx_tick(), -16)
+    for tt in (11.12, 11.3, 11.48): put(tt, pop(1300, 900, 0.08), -20)
     put(14.62 + 0.3, L.sfx_tick(), -12); put(14.64 + 0.3, pop(1300, 700, 0.12), -15)
     put(VID_END + 0.1, L.sfx_boom(), -12); put(VID_END + 0.15, L.sfx_shimmer(), -24)
     import wave
