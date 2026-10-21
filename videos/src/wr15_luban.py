@@ -108,14 +108,15 @@ def pencil(img):
     rgb = paper * (sk[..., None] / 255.0) + np.array([40, 40, 46], np.float32) * (1 - sk[..., None] / 255.0)
     return Image.fromarray(np.clip(rgb, 0, 255).astype(np.uint8))
 
-HERO = cover(IMG + "/hero-s70.jpg", CW * 2, CH * 2, 0.5, 0.55)
+HERO = cover(HERE + "/refs/clean/hero-s70.jpg", CW * 2, CH * 2, 0.5, 0.55)
+# refs/clean/*: Luban branding removed by clean_logos.py (their logo must never appear)
 # Polina's generated sketches; the S70 one is pre-aligned to hero-s70.jpg (refs/sketch_s70_aligned.png)
 SKETCH = cover(HERE + "/refs/sketch_s70_aligned.png", CW * 2, CH * 2, 0.5, 0.55)
 _fs = ImageOps.grayscale(cover(HERE + "/refs/sketch_frame.png", CW, CH, 0.5, 0.45))
 FRAME_INK = Image.fromarray(np.clip((255 - np.array(_fs, np.float32)) * 1.5, 0, 255).astype(np.uint8))
 FRAME = cover(IMG + "/insulation.jpg", CW * 2, CH * 2, 0.45, 0.6)
 LIVING = cover(IMG + "/s70-living.jpg", CW * 2, CH * 2, 0.5, 0.55)   # straight lens; 2bed-living is wide-angle
-KITCHEN = cover(IMG + "/s70-kitchen.jpg", CW, CH * 2, 0.5, 0.42)
+KITCHEN = cover(HERE + "/refs/clean/s70-kitchen.jpg", CW, CH * 2, 0.5, 0.42)
 BATH = cover(IMG + "/s70-bath.jpg", CW, CH * 2, 0.55, 0.45)
 END1 = cover(IMG + "/wr-hero.jpg", CW * 2, CH * 2, 0.5, 0.7, crop=(0, 470, 1600, 1289))
 END2 = cover(IMG + "/hero-k70.jpg", CW * 2, CH * 2, 0.5, 0.5)
