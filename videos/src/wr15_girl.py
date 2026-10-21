@@ -112,10 +112,12 @@ def _frame(i):
     p = f"{TMP}/wr15g_{i:04d}.png"; compose(i / FPS).save(p, compress_level=1); return p
 def run(out):
     extract(); sfx = TMP + "/wr15g_sfx.wav"; make_sfx(sfx); n = int(round(TOTAL * FPS))
+    import music; mus = TMP + "/wr15g_music.wav"; music.write(mus, TOTAL, LOGO_T)
     with Pool(os.cpu_count()) as pool: pool.map(_frame, range(n), chunksize=4)
-    subprocess.run(["ffmpeg", "-v", "error", "-y", "-framerate", str(FPS), "-i", f"{TMP}/wr15g_%04d.png", "-i", SRC, "-i", sfx,
-        "-filter_complex", "[1:a]aresample=44100,aformat=channel_layouts=stereo,apad[v];[2:a]aresample=44100[s];"
-        "[v][s]amix=inputs=2:normalize=0:duration=longest,alimiter=limit=0.84:level=false,loudnorm=I=-14:TP=-1.5:LRA=11,aresample=44100[a]",
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-framerate", str(FPS), "-i", f"{TMP}/wr15g_%04d.png", "-i", SRC, "-i", sfx, "-i", mus,
+        "-filter_complex", "[1:a]aresample=44100,aformat=channel_layouts=stereo,apad,asplit=2[v][vk];[2:a]aresample=44100[s];"
+        "[3:a]aresample=44100,volume=-22dB[m0];[m0][vk]sidechaincompress=threshold=0.02:ratio=3:attack=30:release=400[m];"
+        "[v][s][m]amix=inputs=3:normalize=0:duration=longest,alimiter=limit=0.84:level=false,loudnorm=I=-14:TP=-1.5:LRA=11,aresample=44100[a]",
         "-map", "0:v", "-map", "[a]", "-t", str(TOTAL), "-c:v", "libx264", "-preset", "slow", "-crf", "19", "-pix_fmt", "yuv420p",
         "-profile:v", "high", "-level", "4.1", "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709",
         "-c:a", "aac", "-b:a", "256k", "-movflags", "+faststart", out], check=True)
