@@ -318,8 +318,9 @@ def panel(t):
 
 # ---------------------------------------------------------------- lower third: dark, in our colours
 F_LT_NAME = MF(500, 62); F_LT_TAG = MF(600, 22)
+LT = (4.7, 9.25)                                       # lower third in / out
 def lower_third(ov, t, x=X0, y=1150):
-    kin = ease_io(prog(t, 4.7, 0.45)); kout = ease_io(prog(t, 9.25, 0.35)); k = kin * (1 - kout)
+    kin = ease_io(prog(t, LT[0], 0.45)); kout = ease_io(prog(t, LT[1], 0.35)); k = kin * (1 - kout)
     if k <= 0: return
     name = text("Alena", F_LT_NAME, (255, 255, 255, 255)); tag = text("DIRECTORA · WHITEROOM GROUP", F_LT_TAG, GOLD + (255,), 4)
     nw, nh = name.width + 64, 96; tw_, th = tag.width + 40, 44
@@ -348,7 +349,7 @@ def compose(t):
             if ye < H: fr.alpha_composite(Image.new("RGBA", (W, 2), GOLD + (190,)), (0, max(0, ye - 1)))
         fr.alpha_composite(GRAD)
         ov = Image.new("RGBA", (W, H), (0, 0, 0, 0)); ov.alpha_composite(WM, WM_POS)
-        if 4.5 <= t <= 9.9: lower_third(ov, t)
+        if LT[0] - 0.2 <= t <= LT[1] + 0.65: lower_third(ov, t)
         if t >= CTA_T: cta_button(ov, t)
         L.draw_subs(ov, t); fr.alpha_composite(ov)
     FB0 = LOGO_T - 0.45

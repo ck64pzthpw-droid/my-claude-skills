@@ -90,7 +90,11 @@ def box_edges(x0, y0, z0, dx, dy, dz):
 
 def s70_iso(fr, o, s, k_draw=1.0, k_gold=0.0, lift=0.0, alpha=1.0):
     """S70 module 11.4 x 3.4 x 3.3 m as thin line art; k_draw draws the edges in, k_gold fills it with a gold glow"""
-    dx, dy, dz = 11.4, 3.4, 3.3; z0 = lift
+    iso_box(fr, o, s, (11.4, 3.4, 3.3), k_draw, k_gold, lift, alpha)
+
+def iso_box(fr, o, s, dims, k_draw=1.0, k_gold=0.0, lift=0.0, alpha=1.0, windows=True, grey=False):
+    """any box volume (metres) as line art; grey=True draws it dim and dashed (the 'old idea' look)"""
+    dx, dy, dz = dims; z0 = lift
     P = lambda x, y, z: iso(x, y, z + z0, o, s)
     if k_gold > 0:
         lay, d = ss_canvas(W, H)
@@ -109,12 +113,15 @@ def s70_iso(fr, o, s, k_draw=1.0, k_gold=0.0, lift=0.0, alpha=1.0):
         pa, pb = P(*v[a]), P(*v[b]); pb = (lerp(pa[0], pb[0], kk), lerp(pa[1], pb[1], kk))
         col = GOLD if k_gold > 0.5 else LINE
         if (a, b) in hidden: hair(d, [pa, pb], LINE, 0.25 * alpha, 1.2, dash=8)
+        elif grey: hair(d, [pa, pb], (150, 150, 158), 0.8 * alpha, 1.6, dash=7)
         else: hair(d, [pa, pb], col, 0.95 * alpha, 2.4)
     # window band on the long front face + door
-    if k_draw >= 1:
+    if k_draw >= 1 and windows and not grey:
         w0, w1 = 1.2, dx - 1.2
-        hair(d, [P(w0, dy, 0.9), P(w1, dy, 0.9), P(w1, dy, 2.7), P(w0, dy, 2.7), P(w0, dy, 0.9)], LINE, 0.45 * alpha, 1.2)
-        for xx in np.linspace(w0, w1, 6)[1:-1]: hair(d, [P(xx, dy, 0.9), P(xx, dy, 2.7)], LINE, 0.3 * alpha, 1.0)
+        zt = min(2.7, dz - 0.6)
+        for zb in np.arange(0, dz - 1.0, 3.3):                 # one window band per storey
+            hair(d, [P(w0, dy, zb + 0.9), P(w1, dy, zb + 0.9), P(w1, dy, zb + zt), P(w0, dy, zb + zt), P(w0, dy, zb + 0.9)], LINE, 0.45 * alpha, 1.2)
+            for xx in np.linspace(w0, w1, 6)[1:-1]: hair(d, [P(xx, dy, zb + 0.9), P(xx, dy, zb + zt)], LINE, 0.3 * alpha, 1.0)
     fr.alpha_composite(ss_done(lay, W, H))
 
 def iso_plot(fr, o, s, nx=15, ny=7, x0=-1.8, y0=-1.8, k=1.0, a=1.0):
