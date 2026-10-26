@@ -25,9 +25,8 @@ X0, EY, CYP = V.X0, V.EY, V.CYP
 # (start, zoom in split, focus x, source row at the panel edge); wide shots are zoomed so she reads at the same size
 A.SHOTS[:] = [(0.0, 1.35, 0.5, 420), (9.70, 1.0, 0.5, 320), (15.53, 1.6, 0.5, 550), (24.90, 1.0, 0.5, 310),
               (30.73, 1.35, 0.5, 435), (41.30, 1.0, 0.5, 310), (43.97, 1.35, 0.5, 450)]
-A.EDGE[:] = [(0.0, 0), (0.25, 0), (0.65, 1), (5.2, 1), (5.55, 0), (7.7, 0), (8.1, 1),
-             (9.38, 1), (9.6, 2), (9.95, 2), (10.3, 1), (15.2, 1), (15.45, 2), (15.85, 2), (16.2, 1),
-             (24.6, 1), (24.83, 2), (25.2, 2), (25.55, 1), (30.45, 1), (30.66, 2), (31.05, 2), (31.4, 1),
+A.EDGE[:] = [(0.0, 0), (0.25, 0), (0.65, 1), (5.2, 1), (5.55, 0), (7.7, 0), (8.15, 2),
+             (9.95, 2), (10.4, 1), (15.1, 1), (15.48, 2), (25.2, 2), (25.6, 1), (30.45, 1), (30.66, 2), (31.05, 2), (31.4, 1),
              (41.0, 1), (41.23, 2), (41.6, 2), (41.95, 1), (43.65, 1), (43.9, 2), (44.3, 2), (44.65, 1),
              (52.3, 1), (52.65, 2), (99, 2)]
 
@@ -66,6 +65,10 @@ A.CH_TXT[:] = ["Eso de que una casa / =modular", "es una caja / =pequeña y estr
     "=incluido / en el precio", "=Escríbenos / por mensaje privado", "y cuéntanos, / cómo sería la casa / =del futuro",
     "de tus / =sueños?"]
 L.CHUNKS = V.build_chunks(); L.CHUNKS[-1].end = VID_END
+
+def DY(t):
+    e = A.edge(t); e = e * V.PANEL_H / A.PANEL_H if e <= A.PANEL_H else lerp(V.PANEL_H, H, (e - A.PANEL_H) / (H - A.PANEL_H))
+    return clamp((e - V.PANEL_H) / (H - V.PANEL_H)) * (H / 2 - CYP - 40)
 
 # voice envelope (drives the voice-control waveform)
 def _env():
@@ -119,33 +122,59 @@ def sc_hook(t):                                       # 0 - 7.7 "la caja pequeñ
     return fr
 
 def sc_size(t):                                       # 7.7 - 12.9 "casas amplias de 100 e incluso 200 m²"
-    fr = V.GROUND.copy(); eyebrow(fr, "Casas amplias", X0, EY, prog(t, 7.8, 0.45))
+    fr = V.GROUND.copy(); dy_ = DY(t); eyebrow(fr, "Casas amplias", X0, EY, prog(t, 7.8, 0.45))
     k1 = ease_io(prog(t, 10.2, 0.8)); k2 = ease_io(prog(t, 11.4, 0.9))
     m2 = int(round(lerp(0, 100, k1) + 100 * k2))
     if k1 > 0:                                        # big thin number, on the alignment line
         n = text(str(m2), MF(200, 150), GOLD + (255,), -3); u = text("m²", MF(300, 48), (255, 255, 255, 255))
-        put(fr, n, X0 - 6, EY + 34, ease_out(k1)); put(fr, u, X0 + text("200", MF(200, 150), GOLD, -3).width + 6, EY + 34 + n.height - u.height - 30, ease_out(k1))
-    s = 28; dx, dy = 12.0, 8.4; dz = 3.3 + 3.3 * k2
-    o = (W / 2 + 120 - (dx - dy) / 2 * S.C30 * s, 640)
+        put(fr, n, X0 - 6, EY + 34 + dy_, ease_out(k1)); put(fr, u, X0 + text("200", MF(200, 150), GOLD, -3).width + 6, EY + 34 + dy_ + n.height - u.height - 30, ease_out(k1))
+    f = dy_ / 345; s = 28 + 16 * f; dx, dy = 12.0, 8.4; dz = 3.3 + 3.3 * k2
+    c0 = S.iso(dx / 2, dy / 2, 1.65, (W / 2 + 120 - (dx - dy) / 2 * S.C30 * 28, 640), 28)     # where it sits over Alena
+    c = S.iso(dx / 2, dy / 2, 1.65, (0, 0), s)                                                # full screen: centred, bigger
+    o = (lerp(c0[0], W / 2, f) - c[0], lerp(c0[1], H / 2 - 40, f) - c[1])
     S.iso_plot(fr, o, s, 16, 12, -2, -1.8, ease_out(prog(t, 7.85, 0.7)), 0.8)
     kd = ease_out(prog(t, 8.0, 1.3))
     S.iso_box(fr, o, s, (dx, dy, dz), kd, ease_io(prog(t, 10.3, 0.6)), 0, ease_out(clamp(kd * 2)))
     P = lambda x, y, z: S.iso(x, y, z, o, s)
     if k2 > 0.9:                                      # storey line on the second floor
         lay, d = ss_canvas(W, H); hair(d, [P(0, dy, 3.3), P(dx, dy, 3.3), P(dx, 0, 3.3)], GOLD, 0.7, 1.5); fr.alpha_composite(ss_done(lay, W, H))
+    kf = ease_io(prog(t, 11.9, 0.7))
+    if kf > 0: villa(fr, P, dx, dy, dz, kf)
     return fr
+
+def villa(fr, P, dx, dy, dz, k):
+    """the line volume turns into our house: white shell, big glazing with warm light, terrace deck"""
+    lay, d = ss_canvas(W, H)
+    def poly(pts, col, a=255): d.polygon([(x * SS, y * SS) for x, y in (P(*q) for q in pts)], fill=col + (a,))
+    def front(x0, x1, z0, z1, col, a=255): poly([(x0, dy, z0), (x1, dy, z0), (x1, dy, z1), (x0, dy, z1)], col, a)
+    def side(y0, y1, z0, z1, col, a=255): poly([(dx, y0, z0), (dx, y1, z0), (dx, y1, z1), (dx, y0, z1)], col, a)
+    poly([(-0.6, dy, 0), (dx + 0.6, dy, 0), (dx + 0.6, dy + 3.0, 0), (-0.6, dy + 3.0, 0)], (52, 44, 36))      # deck
+    for j in range(1, 12):                                                                              # deck boards
+        x = -0.6 + j * (dx + 1.2) / 12; hair(d, [P(x, dy, 0), P(x, dy + 3.0, 0)], (30, 26, 22), 0.8, 1)
+    poly([(0, 0, dz), (dx, 0, dz), (dx, dy, dz), (0, dy, dz)], (236, 236, 238))                          # roof
+    front(0, dx, 0, dz, (214, 214, 218)); side(0, dy, 0, dz, (168, 168, 176))                          # white aluminium shell
+    for zb in (0.0, 3.3):                                                                               # glazing per storey
+        x0, x1 = (0.9, dx - 0.9) if zb == 0 else (3.6, dx - 0.9)
+        front(x0, x1, zb + 0.35, zb + 2.95, (24, 24, 28))
+        front(x0 + 0.1, x1 - 0.1, zb + 0.35, zb + 1.5, (196, 150, 92), 120)                            # warm interior light
+        for xx in np.linspace(x0, x1, 5)[1:-1]: hair(d, [P(xx, dy, zb + 0.35), P(xx, dy, zb + 2.95)], (12, 12, 14), 1, 2)
+        side(2.4, dy - 2.4, zb + 0.6, zb + 2.95, (24, 24, 28)); side(2.5, dy - 2.5, zb + 0.6, zb + 1.6, (196, 150, 92), 90)
+    hair(d, [P(0, dy, 3.3), P(dx, dy, 3.3), P(dx, 0, 3.3)], (150, 150, 158), 1, 1.5)                    # floor line
+    for a, b in ((P(0, dy, dz), P(dx, dy, dz)), (P(dx, dy, dz), P(dx, 0, dz)), (P(dx, dy, 0), P(dx, dy, dz))):
+        hair(d, [a, b], GOLD, 0.9, 2)                                                                   # gold edge accents
+    fr.alpha_composite(with_alpha(ss_done(lay, W, H), k))
 
 def sc_interior(t):                                   # 12.9 - 16.9 "lo que te va a sorprender está en el interior"
     fr = V.GROUND.copy()
-    V.label_swap(fr, [(13.0, "Lo que sorprende"), (15.7, "Está en el interior")], t)
+    dy_ = DY(t); V.label_swap(fr, [(13.0, "Lo que sorprende"), (15.7, "Está en el interior")], t, EY + dy_)
     c = V.wipe_seq(V.card_img(A.INTERIORS[0], 1.02 + 0.06 * prog(t, 13.0, 4.0)), [(15.75, V.card_img(A.INTERIORS[2], 1.02 + 0.04 * prog(t, 15.75, 1.2)))], t)
-    V.show_card(fr, c, V.CARD_CY, ease_out(prog(t, 13.0, 0.5)))
+    V.show_card(fr, c, V.CARD_CY + dy_, ease_out(prog(t, 13.0, 0.5)))
     return fr
 
 NODES = [("Luces", -1, -1), ("Clima", 1, -1), ("Persianas", -1, 1), ("Acceso", 1, 1)]
 def sc_hub(t):                                        # 16.9 - 22.5 "sistema domótico premium, sin ningún coste adicional"
-    fr = V.GROUND.copy(); eyebrow(fr, "Domótica premium", X0, EY, prog(t, 17.0, 0.45))
-    cx, cy = W / 2, CYP + 20; dxn, dyn = 300, 170
+    dy_ = DY(t); fr = V.GROUND.copy(); eyebrow(fr, "Domótica premium", X0, EY + dy_ * 1.2, prog(t, 17.0, 0.45))
+    cx, cy = W / 2, CYP + 20 + dy_; dxn, dyn = 300, 170
     kh = ease_out(prog(t, 17.2, 0.5))
     lay, d = ss_canvas(W, H)
     for i, (lab, sx, sy) in enumerate(NODES):         # orthogonal hairline connectors, drawn in one by one
@@ -175,8 +204,8 @@ def sc_hub(t):                                        # 16.9 - 22.5 "sistema dom
 
 def sc_lock(t):                                       # 22.5 - 26.6 "olvídate de las llaves · la puerta se abre con un solo toque"
     fr = V.GROUND.copy()
-    V.label_swap(fr, [(22.6, "Olvídate de las llaves"), (24.36, "Un solo toque")], t)
-    cx, cy = W / 2, CYP + 30
+    dy_ = DY(t); V.label_swap(fr, [(22.6, "Olvídate de las llaves"), (24.36, "Un solo toque")], t, EY + dy_ * 1.2)
+    cx, cy = W / 2, CYP + 30 + dy_
     kk = ease_out(prog(t, 22.65, 0.45)); kg = ease_io(prog(t, 23.75, 0.5))
     if kk > 0 and kg < 1:                             # Polina's keys fall away
         kw = 440; key = A.KEYS.resize((kw, round(A.KEYS.height * kw / A.KEYS.width)), Image.LANCZOS)
