@@ -193,8 +193,19 @@ def card_photo(img, z, cx=0.5, cy=0.5): return L.card_of(img, z, cx, cy)
 FACTORY = L.cover(IMG + "/factory.jpg", CW * 2, CH * 2, 0.5, 0.5)
 STEEL = L.FRAME
 PLOT = L.cover(IMG + "/v-plot.jpg", CW * 2, CH * 2, 0.55, 0.6)
-LIVING = L.LIVING
-HOUSE = L.END1
+# Polina's visuals (2026-10-26), refs/polina/
+PR = HERE + "/refs/polina/"
+_ic = PR + "interior-collage.png"            # 5 real S70 interior photos in one collage: crop each panel
+INTERIORS = [L.cover(_ic, CW * 2, CH * 2, 0.5, 0.5, crop=b) for b in
+             ((81, 26, 822, 494), (647, 519, 1253, 901), (860, 26, 1593, 494))]   # living, bedroom, kitchen
+HOUSE = L.cover(PR + "sunset-house.png", CW * 2, CH * 2, 0.62, 0.5)
+KEYS = Image.open(PR + "keys.png").convert("RGBA"); KEYS = KEYS.crop(KEYS.getbbox())
+CONTRACT = Image.open(PR + "contract.png").convert("RGBA"); CONTRACT = CONTRACT.crop(CONTRACT.getbbox())
+def _plan_card():                            # real S70 2-bed plan with dimensions, on a paper card
+    c = Image.new("RGB", (CW * 2, CH * 2), PAPER); p = Image.open(PR + "plan-s70-2bed-dims.png").convert("RGB")
+    w = CW * 2 - 100; p = p.resize((w, round(p.height * w / p.width)), Image.LANCZOS)
+    c.paste(p, ((CW * 2 - p.width) // 2, (CH * 2 - p.height) // 2)); return c
+PLANCARD = _plan_card()
 
 # ---------------------------------------------------------------- scenes (drawn in 1920-high space; panel = rows from PANEL_SRC_Y)
 CY = CARD_Y                                      # card centre (shows ~685 px down the panel)
@@ -224,17 +235,12 @@ def sc_factory(t):                               # 9.8 - 14.7 "se fabrican en f�
     fr = L.BGI.copy()
     z = 1.04 + 0.08 * prog(t, 9.8, 3.0)
     c = card_photo(FACTORY, z, 0.5, 0.5)
-    kw = ease_io(prog(t, 12.5, 0.7))
+    kw = ease_io(prog(t, 12.5, 0.6))
     if kw > 0: c = L.wipe(c, card_photo(STEEL, 1.02 + 0.06 * prog(t, 12.5, 2.5), 0.45, 0.6), kw * (CW + 80), 80, line=kw < 1)
+    kp = ease_io(prog(t, 13.25, 0.6))         # "precisión milimétrica": the real plan with its millimetre dimensions
+    if kp > 0: c = L.wipe(c, card_photo(PLANCARD, 1.0 + 0.05 * prog(t, 13.25, 1.6)), kp * (CW + 80), 80, line=kp < 1)
     kin = ease_out(prog(t, 9.8, 0.5)); L.put_card(fr, c, CY, 0.94 + 0.06 * kin, kin)
     chip_at(fr, "FÁBRICA", prog(t, 12.0, 0.4) * (1 - ease_io(prog(t, 12.6, 0.3))), CY - CH / 2 - 70)
-    # dimensions on "precisión milimétrica": real S70 length / height
-    x0, x1 = (W - CW) / 2 + 70, (W + CW) / 2 - 70; yb = CY + CH / 2 - 70
-    kd = ease_io(prog(t, 13.3, 0.8)); n = int(round(11400 * kd / 10)) * 10
-    dim_line(fr, x0, yb, x1, yb, kd, f"{n:,} mm".replace(",", " "), prog(t, 13.4, 0.3))
-    kv = ease_io(prog(t, 13.75, 0.6)); yt = CY - CH / 2 + 60; xr = x1 + 10
-    m = int(round(3300 * kv / 10)) * 10
-    dim_line(fr, xr, yb - 50, xr, yt, kv, f"{m:,} mm".replace(",", " "), prog(t, 13.85, 0.3))
     return fr
 
 ROUTE = [(210, 560), (420, 520), (620, 760), (560, 940), (720, 1110), (860, 1140)]
@@ -336,12 +342,18 @@ def sc_90(t):                                    # 24.1 - 30.95 "en solo 90 día
     # the keys
     kk = ease_out(prog(t, 26.25, 0.5)); k_gone = ease_io(prog(t, 27.6, 0.35))
     if kk > 0 and k_gone < 1:
-        key = key_icon(520).rotate(lerp(-35, 0, kk), resample=Image.BICUBIC, expand=True)
-        paste_c(fr, key, cx, cy - 10, kk * (1 - k_gone), 0.8 + 0.2 * kk)
-        paste_c(fr, label("TUS LLAVES", 40), cx, cy + 170, ease_out(prog(t, 26.5, 0.3)) * (1 - k_gone))
+        kw_ = 600; key = KEYS.resize((kw_, round(KEYS.height * kw_ / KEYS.width)), Image.LANCZOS)
+        key = key.rotate(lerp(-18, 0, kk) + 2 * math.sin(max(0, t - 26.25) * 3) * (1 - kk * 0.5), resample=Image.BICUBIC, expand=True)
+        sh, pad = L.shadow_of(key, 20, 0.5 * kk * (1 - k_gone))
+        fr.alpha_composite(sh, (int(cx - key.width / 2 - pad), int(cy - 30 - key.height / 2 - pad + 20)))
+        paste_c(fr, key, cx, cy - 30, kk * (1 - k_gone), 0.85 + 0.15 * kk)
+        paste_c(fr, label("TUS LLAVES", 40), cx, cy + 230, ease_out(prog(t, 26.5, 0.3)) * (1 - k_gone))
     kc = ease_out(prog(t, 27.7, 0.5))
     if kc > 0:
-        c = card_photo(LIVING, 1.02 + 0.08 * prog(t, 27.7, 3.3), 0.5, 0.55)
+        c = card_photo(INTERIORS[0], 1.02 + 0.06 * prog(t, 27.7, 3.3))
+        for i, t0 in ((1, 28.85), (2, 29.95)):    # living -> bedroom -> kitchen
+            kw = ease_io(prog(t, t0, 0.55))
+            if kw > 0: c = L.wipe(c, card_photo(INTERIORS[i], 1.02 + 0.05 * prog(t, t0, 1.5)), kw * (CW + 80), 80, line=kw < 1)
         L.put_card(fr, c, CY, 0.92 + 0.08 * kc, kc)
         chip_at(fr, "LISTA PARA VIVIR", prog(t, 29.4, 0.4), CY - CH / 2 - 70)
     return fr
@@ -380,27 +392,15 @@ def sc_price(t):                                 # 30.95 - 37.3 rising budget, t
         paste_c(fr, label("PRECIO CERRADO", 34, GOLD + (255,)), (gx0 + gx1) / 2 - 70, yf - 60, ease_out(prog(t, 36.55, 0.35)))
     return fr
 
-SCRIBBLE = [(0, .6), (.06, .1), (.12, .8), (.18, .3), (.22, .55), (.3, .15), (.34, .7), (.42, .4), (.5, .6),
-            (.56, .2), (.62, .75), (.7, .45), (.8, .5), (1, .35)]
 def sc_contract(t):                              # 37.3 - 41.0 "lo que firmas en el contrato es lo que pagas, ni un céntimo más"
     fr = L.BGI.copy(); kin = ease_out(prog(t, 37.3, 0.45))
-    pw, ph = 560, 700; px, py = (W - pw) / 2, CY - ph / 2 + (1 - kin) * 40
-    paper, d = ss_canvas(pw, ph); s = SS
-    d.rounded_rectangle([0, 0, pw * s - 1, ph * s - 1], 26 * s, fill=PAPER + (255,))
-    for i, wl in enumerate((0.9, 0.75, 0.85, 0.6, 0.8)):
-        y = 170 + i * 46; d.rounded_rectangle([60 * s, y * s, (60 + (pw - 120) * wl) * s, (y + 16) * s], 8 * s, fill=(200, 198, 192, 255))
-    d.rounded_rectangle([60 * s, 420 * s, (pw - 60) * s, 500 * s], 16 * s, fill=(236, 232, 222, 255))
-    d.line([(60 * s, 610 * s), (pw * 0.62 * s, 610 * s)], fill=(150, 148, 142, 255), width=3 * s)
-    ks = ease_io(prog(t, 37.65, 0.8))
-    if ks > 0:
-        sp = [(80 + x * 230, 520 + y * 80) for x, y in SCRIBBLE]
-        d.line([(x * s, y * s) for x, y in polyline_part(sp, ks)], fill=(30, 44, 96, 255), width=5 * s, joint="curve")
-    pap = ss_done(paper, pw, ph); dd = ImageDraw.Draw(pap)
-    dd.text((60, 70), "CONTRATO", font=font("Inter-Bold.otf", 46), fill=(24, 24, 26, 255))
-    dd.text((84, 440), "PRECIO TOTAL", font=font("Inter-SemiBold.otf", 28), fill=(90, 88, 84, 255))
-    dd.text((pw - 84 - font("Inter-Bold.otf", 30).getlength("FIJO"), 438), "FIJO", font=font("Inter-Bold.otf", 30), fill=(170, 120, 60, 255))
-    sh, pad = L.shadow_of(pap, 24, 0.55 * kin)
-    fr.alpha_composite(sh, (int(px - pad), int(py - pad + 18))); fr.alpha_composite(with_alpha(pap, kin), (int(px), int(py)))
+    pw = 860; doc = CONTRACT.resize((pw, round(CONTRACT.height * pw / CONTRACT.width)), Image.LANCZOS); ph = doc.height
+    sc0 = 0.94 + 0.06 * kin + 0.03 * prog(t, 37.3, 3.7)
+    doc = doc.resize((round(pw * sc0), round(ph * sc0)), Image.LANCZOS)
+    px, py = (W - doc.width) / 2, CY - 40 - doc.height / 2 + (1 - kin) * 40
+    sh, pad = L.shadow_of(doc, 24, 0.55 * kin)
+    fr.alpha_composite(sh, (int(px - pad), int(py - pad + 18))); fr.alpha_composite(with_alpha(doc, kin), (int(px), int(py)))
+    pw, ph = doc.width, doc.height
     # stamp on "pagas"
     kp = prog(t, 39.4, 0.3)
     if kp > 0:
@@ -408,19 +408,19 @@ def sc_contract(t):                              # 37.3 - 41.0 "lo que firmas en
         sw, sh_ = tx.width + 60, tx.height + 40; st, d = ss_canvas(sw, sh_)
         d.rounded_rectangle([4 * SS, 4 * SS, (sw - 4) * SS, (sh_ - 4) * SS], 18 * SS, outline=GOLD + (255,), width=6 * SS)
         st = ss_done(st, sw, sh_); st.alpha_composite(tx, (30, 20)); st = st.rotate(12, resample=Image.BICUBIC, expand=True)
-        paste_c(fr, st, W / 2 + 40, py + 330, ease_out(kp), 1.4 - 0.4 * ease_out(kp))
+        paste_c(fr, st, px + pw * 0.56, py + ph * 0.42, ease_out(kp), 1.4 - 0.4 * ease_out(kp))
     # "+0 €" badge on "ni un céntimo más"
     kb = prog(t, 40.05, 0.35)
     if kb > 0:
         bs = 220; b, d = ss_canvas(bs, bs); d.ellipse([0, 0, bs * SS - 1, bs * SS - 1], fill=GOLD + (255,)); b = ss_done(b, bs, bs)
         tx = text_img("+0 €", ImageFont.truetype(F_DISP, 76), (20, 20, 22, 255), -2); b.alpha_composite(tx, ((bs - tx.width) // 2, (bs - tx.height) // 2 - 6))
         sc = 0.6 + 0.4 * ease_out(kb) + 0.08 * math.sin(math.pi * clamp(kb * 1.4))
-        paste_c(fr, b, px + pw - 20, py + 30, ease_out(kb), sc)
+        paste_c(fr, b, px + pw * 0.86, py + ph * 0.1, ease_out(kb), sc)
     return fr
 
 def sc_3m(t):                                    # 41.0 - 45.2 "te imaginas tener tu propia casa en tan solo tres meses?"
     fr = L.BGI.copy(); kin = ease_out(prog(t, 42.2, 0.5))
-    c = card_photo(HOUSE, 1.02 + 0.1 * prog(t, 42.2, 3.0), 0.5, 0.7)
+    c = card_photo(HOUSE, 1.02 + 0.1 * prog(t, 42.2, 3.0), 0.6, 0.5)
     L.put_card(fr, c, CY, 0.92 + 0.08 * kin, kin)
     chip_at(fr, "TU PROPIA CASA", prog(t, 42.95, 0.4) * (1 - ease_io(prog(t, 44.25, 0.25))), CY - CH / 2 - 70)
     k3 = prog(t, 44.45, 0.4)
@@ -500,7 +500,7 @@ def make_sfx(path):
         i = max(0, int(t * SR)); seg = snd * L.db(g); total[i:i + len(seg)] += seg[:len(total) - i]
     pop = L.sfx_pop
     for tt in (0.95, 4.75, 12.0, 15.7, 17.1, 18.1, 29.4, 36.55, 42.95): put(tt, pop(1200, 800, 0.1), -20)
-    for tt in (13.4, 13.85, 18.75): put(tt, L.sfx_tick(), -17)
+    for tt in (13.3, 18.75): put(tt, L.sfx_tick(), -17)
     for _, _, ts in SIN: put(ts - 0.1, pop(900, 400, 0.14), -17)
     put(25.6, pop(1400, 900, 0.1), -17); put(26.3, L.sfx_tick(), -16)
     put(36.3, L.sfx_tick(), -15); put(39.4, pop(700, 250, 0.18), -14); put(40.05, pop(1300, 800, 0.12), -16)
