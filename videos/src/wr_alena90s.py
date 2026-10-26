@@ -22,6 +22,7 @@ EY = 238                           # eyebrow row
 SUB_CY = 1420                      # subtitles: higher and smaller than v3 (Polina)
 
 # y0 ~ 95 px above the top of her head in split screen
+A.EDGE[-2:] = [(48.45, 1), (48.8, 2), (99, 2)]   # Alena stays in split under the CTA, panel covers only for the last second
 A.SHOTS[:] = [(0.0, 1.0, 0.5, 335), (3.96, 1.0, 0.5, 240), (14.16, 1.0, 0.5, 200), (19.56, 1.0, 0.5, 273),
               (25.64, 1.0, 0.5, 335), (33.56, 1.45, 0.5, 480), (40.16, 1.0, 0.5, 345)]
 
@@ -259,8 +260,8 @@ def sc_contract(t):                                   # 37.3 - 41.0 what you sig
     fr = GROUND.copy(); eyebrow(fr, "Contrato", X0, EY, prog(t, 37.3, 0.45))
     headline(fr, "Lo que firmas", "es lo que pagas", X0, EY + 44, prog(t, 37.35, 0.7), 50)
     kin = ease_out(prog(t, 37.45, 0.5))
-    pw = 660; doc = CONTRACT.resize((pw, round(CONTRACT.height * pw / CONTRACT.width)), Image.LANCZOS)
-    cx, cy = W / 2 + 40, EY + 150 + 20 + doc.height / 2 + (1 - kin) * 24
+    pw = 900; doc = CONTRACT.resize((pw, round(CONTRACT.height * pw / CONTRACT.width)), Image.LANCZOS)
+    cx, cy = W - doc.width / 2 + 110 + (1 - kin) * 40, EY + 150 + doc.height / 2    # bigger, runs off the right edge
     sh, pad = L.shadow_of(doc, 26, 0.5 * kin)
     fr.alpha_composite(sh, (int(cx - doc.width / 2 - pad), int(cy - doc.height / 2 - pad + 18))); put(fr, doc, cx, cy, kin, "mm")
     kb = prog(t, 40.05, 0.4)
@@ -273,7 +274,7 @@ def sc_contract(t):                                   # 37.3 - 41.0 what you sig
 
 def sc_3m(t):                                         # 41.0 - 45.2 your own house in three months
     fr = GROUND.copy()
-    label_swap(fr, [(42.2, "Tu propia casa"), (44.4, "En tan solo")], t)
+    label_swap(fr, [(42.2, "Tu propia casa"), (44.4, "En tan solo"), (45.5, "Mensaje privado")], t)
     kin = ease_out(prog(t, 42.2, 0.5))
     r = show_card(fr, card_img(HOUSE, 1.02 + 0.08 * prog(t, 42.2, 3.0), 0.6, 0.5), CARD_CY, kin)
     k3 = prog(t, 44.45, 0.45)
@@ -287,10 +288,10 @@ def sc_3m(t):                                         # 41.0 - 45.2 your own hou
     return fr
 
 CTA_T = 45.45
-def sc_cta(t):                                        # 45.2 - end  white button at the true screen centre
-    fr = GROUND.copy(); cy = H / 2
+def sc_cta(t): return GROUND.copy()
+def cta_button(fr, t):                                # white button at the true screen centre = on the panel seam
+    cy = H / 2
     k = ease_out(prog(t, CTA_T, 0.45)); press = math.sin(math.pi * prog(t, CTA_T + 0.45, 0.22)) if CTA_T + 0.45 <= t <= CTA_T + 0.67 else 0
-    eyebrow(fr, "Mensaje privado", W / 2, cy - 150, prog(t, CTA_T + 0.1, 0.45), center=True)
     f = MF(600, 58); tx = text("Escríbenos", f, (20, 20, 22, 255))
     bw, bh = tx.width + 150, 150; b, d = ss_canvas(bw, bh)
     d.rounded_rectangle([0, 0, bw * SS - 1, bh * SS - 1], bh * SS / 2, fill=(255, 255, 255, 255)); b = ss_done(b, bw, bh)
@@ -306,7 +307,7 @@ def sc_cta(t):                                        # 45.2 - end  white button
     return fr
 
 SCENES = [(0.0, 4.6, sc_hook), (9.7, 14.7, sc_factory), (14.7, 19.3, sc_plot), (19.3, 24.1, sc_sin),
-          (24.1, 30.95, sc_90), (30.95, 37.3, sc_price), (37.3, 41.0, sc_contract), (41.0, 45.2, sc_3m), (45.2, 99, sc_cta)]
+          (24.1, 30.95, sc_90), (30.95, 37.3, sc_price), (37.3, 41.0, sc_contract), (41.0, 48.6, sc_3m), (48.6, 99, sc_cta)]
 XF = 0.3
 def panel(t):
     fr = None
@@ -348,6 +349,7 @@ def compose(t):
         fr.alpha_composite(GRAD)
         ov = Image.new("RGBA", (W, H), (0, 0, 0, 0)); ov.alpha_composite(WM, WM_POS)
         if 4.5 <= t <= 9.9: lower_third(ov, t)
+        if t >= CTA_T: cta_button(ov, t)
         L.draw_subs(ov, t); fr.alpha_composite(ov)
     FB0 = LOGO_T - 0.45
     if t >= FB0:
@@ -365,7 +367,7 @@ def make_sfx(path):
     def add(t, snd, g):
         i = max(0, int(t * SR)); seg = snd * L.db(g); total[i:i + len(seg)] += seg[:len(total) - i]
     pop = L.sfx_pop
-    for tt in (0.4, 10.0, 13.2, 14.85, 17.0, 24.15, 26.25, 27.7, 31.0, 34.85, 37.3, 42.2): add(tt, pop(1200, 800, 0.1), -22)
+    # (the soft pop on every label change was removed: Polina found the repeated sound annoying)
     for tt in (15.85, 18.05, 36.45): add(tt, L.sfx_tick(), -17)
     for _, _, ts in SIN: add(ts, pop(900, 400, 0.14), -18)
     add(25.6, pop(1400, 900, 0.1), -17); add(40.05, pop(1300, 800, 0.12), -16); add(44.45, pop(1200, 700, 0.12), -17)
