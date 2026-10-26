@@ -4,7 +4,7 @@
 # Usage: wr_alena90.py preview OUT_PREFIX t1,t2,...   |   wr_alena90.py full OUT.mp4
 import os, sys, math, subprocess, glob, wave
 from multiprocessing import Pool
-os.environ.setdefault("SUB_CY", "1660")
+os.environ.setdefault("SUB_CY", "1530")   # Polina: subtitles closer to the centre; any higher covers her face in split screen
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 import wr15_luban as L
@@ -20,8 +20,9 @@ IMG = L.IMG
 
 # ---------------------------------------------------------------- presenter
 # source shots: (start, zoom, focus x, source row that sits at the panel edge in split screen)
-SHOTS = [(0.0, 1.0, 0.5, 340), (3.96, 1.0, 0.5, 250), (14.16, 1.0, 0.5, 165), (19.56, 1.0, 0.5, 290),
-         (25.64, 1.0, 0.5, 450), (33.56, 1.45, 0.5, 450), (40.16, 1.0, 0.5, 300)]
+# y0 ~ 130 px above the top of her head, so the panel edge never cuts her head
+SHOTS = [(0.0, 1.0, 0.5, 300), (3.96, 1.0, 0.5, 210), (14.16, 1.0, 0.5, 165), (19.56, 1.0, 0.5, 240),
+         (25.64, 1.0, 0.5, 300), (33.56, 1.45, 0.5, 450), (40.16, 1.0, 0.5, 300)]
 def shot(t): return [s for s in SHOTS if s[0] <= t][-1]
 GIRL = []
 def girl_frame(t, split):
@@ -48,12 +49,12 @@ def edge(t):
 
 def _grad():
     a = np.zeros((H, 1), np.float32); y = np.arange(H)
-    a[:, 0] = np.clip((y - 1380) / 540, 0, 1) ** 1.3 * 0.62 + np.clip((330 - y) / 330, 0, 1) * 0.38
+    a[:, 0] = np.clip((y - 1150) / 770, 0, 1) ** 1.2 * 0.62 + np.clip((330 - y) / 330, 0, 1) * 0.38
     g = np.zeros((H, W, 4), np.uint8); g[..., 3] = (np.repeat(a, W, 1) * 255).astype(np.uint8); return Image.fromarray(g)
 GRAD = _grad()
 
 # ---------------------------------------------------------------- our logo (Polina's final SVG, rendered white)
-LOGO = Image.open(HERE + "/refs/wr_logo_white.png").convert("RGBA")
+LOGO = Image.open(HERE + "/refs/wr_logo_white.png")   # Polina's PNG (2026-10-26).convert("RGBA")
 def logo_w(w): return LOGO.resize((w, round(LOGO.height * w / LOGO.width)), Image.LANCZOS)
 WM = with_alpha(logo_w(300), 0.92); WM_POS = ((W - WM.width) // 2, 92)
 END_LOGO = logo_w(760)
@@ -318,7 +319,7 @@ def sc_sin(t):                                   # 19.3 - 24.1 "sin obras, sin e
 
 F_NUM = ImageFont.truetype(F_DISP, 300)
 def sc_90(t):                                    # 24.1 - 30.95 "en solo 90 días tendrás las llaves ... lista para vivir"
-    fr = L.BGI.copy(); cx, cy = W / 2, CY
+    fr = L.BGI.copy(); cx, cy = W / 2, CY - 85       # centred in the visible panel
     k_out = ease_io(prog(t, 26.15, 0.35))
     if k_out < 1:
         a = 1 - k_out; sc = 1 - 0.15 * k_out
@@ -337,7 +338,7 @@ def sc_90(t):                                    # 24.1 - 30.95 "en solo 90 día
     if kk > 0 and k_gone < 1:
         key = key_icon(520).rotate(lerp(-35, 0, kk), resample=Image.BICUBIC, expand=True)
         paste_c(fr, key, cx, cy - 10, kk * (1 - k_gone), 0.8 + 0.2 * kk)
-        paste_c(fr, label("TUS LLAVES", 40), cx, cy + 210, ease_out(prog(t, 26.5, 0.3)) * (1 - k_gone))
+        paste_c(fr, label("TUS LLAVES", 40), cx, cy + 170, ease_out(prog(t, 26.5, 0.3)) * (1 - k_gone))
     kc = ease_out(prog(t, 27.7, 0.5))
     if kc > 0:
         c = card_photo(LIVING, 1.02 + 0.08 * prog(t, 27.7, 3.3), 0.5, 0.55)
@@ -349,7 +350,7 @@ CHART = [(0, .12), (.12, .16), (.25, .22), (.37, .27), (.5, .38), (.62, .45), (.
 def sc_price(t):                                 # 30.95 - 37.3 rising budget, then the price locked flat
     fr = L.BGI.copy()
     kin = ease_out(prog(t, 30.95, 0.45))
-    bw, bh = 940, 640; bx, by = (W - bw) / 2, CY - bh / 2
+    bw, bh = 940, 640; bx, by = (W - bw) / 2, CY - 80 - bh / 2
     im, d = ss_canvas(W, H); s = SS
     d.rounded_rectangle([bx * s, by * s, (bx + bw) * s, (by + bh) * s], 34 * s, fill=(30, 30, 35, 255), outline=(255, 255, 255, 30), width=2 * s)
     gx0, gx1, gy0, gy1 = bx + 110, bx + bw - 80, by + bh - 90, by + 80
@@ -461,9 +462,7 @@ def compose(t):
                 line = Image.new("RGBA", (W, 4), GOLD + (200,)); fr.alpha_composite(line, (0, max(0, ye - 2)))
         fr.alpha_composite(GRAD)
         ov = Image.new("RGBA", (W, H), (0, 0, 0, 0)); ov.alpha_composite(WM, WM_POS)
-        if 4.5 <= t <= 9.9:                       # lower third while she introduces herself
-            r = L.chip("ALENA · WHITEROOM GROUP", prog(t, 4.75, 0.45) * (1 - ease_io(prog(t, 9.2, 0.35))), 1440, "dot")
-            if r: ov.alpha_composite(*r)
+        if 4.5 <= t <= 9.9: lower_third(ov, t)    # name + title while she introduces herself
         L.draw_subs(ov, t); fr.alpha_composite(ov)
     FB0 = LOGO_T - 0.45
     if t >= FB0:
@@ -474,6 +473,25 @@ def compose(t):
             lg = END_LOGO.resize((round(END_LOGO.width * sc), round(END_LOGO.height * sc)), Image.LANCZOS)
             fr.alpha_composite(with_alpha(lg, lk), ((W - lg.width) // 2, (H - lg.height) // 2 - 20))
     return fr.convert("RGB")
+
+# lower third: blue box with her name, white tag with the title (Polina's reference: news-style boxes)
+BLUE = (30, 80, 210)
+F_LT_NAME = ImageFont.truetype(F_DISP, 76); F_LT_TAG = font("Inter-Bold.otf", 30)
+def lower_third(ov, t, x=70, y=1135):
+    kin = ease_io(prog(t, 4.7, 0.4)); kout = ease_io(prog(t, 9.25, 0.35)); kt = ease_io(prog(t, 4.95, 0.35))
+    if kin <= 0 or kout >= 1: return
+    name = text_img("Alena", F_LT_NAME, (255, 255, 255, 255), -1.5)
+    nw, nh = name.width + 56, 112
+    tag = text_img("DIRECTORA · WHITEROOM GROUP", F_LT_TAG, BLUE + (255,), 3)
+    tw_, th = tag.width + 34, 50
+    k = kin * (1 - kout)
+    box = Image.new("RGBA", (nw, nh), BLUE + (255,)); box.alpha_composite(name, (28, (nh - name.height) // 2 - 4))
+    w = int(nw * k)
+    if w > 0: ov.alpha_composite(box.crop((nw - w, 0, nw, nh)) if kout > 0 else box.crop((0, 0, w, nh)), (x, y + th + 6))
+    k2 = kt * (1 - kout)
+    tb = Image.new("RGBA", (tw_, th), (255, 255, 255, 255)); tb.alpha_composite(tag, (17, (th - tag.height) // 2 - 1))
+    w2 = int(tw_ * k2)
+    if w2 > 0: ov.alpha_composite(tb.crop((0, 0, w2, th)), (x, y))
 
 # ---------------------------------------------------------------- sound: soft pops only (no hiss), boom on the logo
 def make_sfx(path):
@@ -502,12 +520,10 @@ def _frame(i):
     p = f"{TMP}/a90_{i:04d}.png"; compose(i / FPS).save(p, compress_level=1); return p
 def run(out):
     extract(); sfx = TMP + "/a90_sfx.wav"; make_sfx(sfx); n = int(round(TOTAL * FPS))
-    import music; mus = TMP + "/a90_music.wav"; music.write(mus, TOTAL, LOGO_T)
     with Pool(os.cpu_count()) as pool: pool.map(_frame, range(n), chunksize=4)
-    subprocess.run(["ffmpeg", "-v", "error", "-y", "-framerate", str(FPS), "-i", f"{TMP}/a90_%04d.png", "-i", SRC, "-i", sfx, "-i", mus,
-        "-filter_complex", "[1:a]aresample=44100,aformat=channel_layouts=stereo,apad,asplit=2[v][vk];[2:a]aresample=44100[s];"
-        "[3:a]aresample=44100,volume=-22dB[m0];[m0][vk]sidechaincompress=threshold=0.02:ratio=3:attack=30:release=400[m];"
-        "[v][s][m]amix=inputs=3:normalize=0:duration=longest,alimiter=limit=0.84:level=false,loudnorm=I=-14:TP=-1.5:LRA=11,aresample=44100[a]",
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-framerate", str(FPS), "-i", f"{TMP}/a90_%04d.png", "-i", SRC, "-i", sfx,                 # no background music (Polina, v2)
+        "-filter_complex", "[1:a]aresample=44100,aformat=channel_layouts=stereo,apad[v];[2:a]aresample=44100[s];"
+        "[v][s]amix=inputs=2:normalize=0:duration=longest,alimiter=limit=0.84:level=false,loudnorm=I=-14:TP=-1.5:LRA=11,aresample=44100[a]",
         "-map", "0:v", "-map", "[a]", "-t", str(TOTAL), "-c:v", "libx264", "-preset", "slow", "-crf", "19", "-pix_fmt", "yuv420p",
         "-profile:v", "high", "-level", "4.1", "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709",
         "-c:a", "aac", "-b:a", "256k", "-movflags", "+faststart", out], check=True)
