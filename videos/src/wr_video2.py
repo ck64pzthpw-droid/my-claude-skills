@@ -70,6 +70,19 @@ def DY(t):
     e = A.edge(t); e = e * V.PANEL_H / A.PANEL_H if e <= A.PANEL_H else lerp(V.PANEL_H, H, (e - A.PANEL_H) / (H - A.PANEL_H))
     return clamp((e - V.PANEL_H) / (H - V.PANEL_H)) * (H / 2 - CYP - 40)
 
+SUB_COVER = [(0, 1300), (13.8, 1350), (16.9, 1335), (22.3, 1335), (22.7, 1270)]
+def sub_target(t):
+    for (a0, y0), (a1, y1) in zip(SUB_COVER, SUB_COVER[1:]):
+        if a0 <= t < a1: return y0 if a1 - a0 > 0.5 else lerp(y0, y1, ease_io((t - a0) / (a1 - a0)))
+    return SUB_COVER[-1][1]
+_draw_subs = L.draw_subs
+def draw_subs(layer, t):
+    sh = int(round(DY(t) / (H / 2 - CYP - 40) * (V.SUB_CY - sub_target(t))))
+    if sh <= 0: return _draw_subs(layer, t)
+    tmp = Image.new("RGBA", (W, H), (0, 0, 0, 0)); _draw_subs(tmp, t)
+    layer.alpha_composite(tmp, (0, 0), (0, sh))
+L.draw_subs = draw_subs
+
 # voice envelope (drives the voice-control waveform)
 def _env():
     p = TMP + "/v2.wav"
@@ -125,24 +138,17 @@ def container(fr, o, s, k, a=1.0):
     fr.alpha_composite(ss_done(lay, W, H))
     return P(dx, 0, 0), P(dx, dy, 0), P(0, dy, 0)
 
-def sc_hook(t):                                       # 0 - 7.7 "la caja pequeña y estrecha ya es cosa del pasado"
+REC = sorted(glob.glob(TMP + "/recf/r_*.jpg"))         # Polina's screen recording: Google images "casa modular españa"
+def sc_hook(t):                                       # 0 - 7.7 "eso de que una casa modular es una caja... ya es cosa del pasado"
     fr = V.GROUND.copy()
     V.label_swap(fr, [(0.35, "Casas modulares"), (3.84, "Cosa del pasado")], t)
-    s = 70; c = S.iso(3.03, 1.22, 1.3, (0, 0), s); o = (W / 2 - c[0], 590 - c[1])      # centred in the panel
-    fade = 1 - 0.6 * ease_io(prog(t, 4.95, 0.4)); kc = ease_out(prog(t, 0.45, 0.9))
-    o = (o[0], o[1] - (1 - kc) * 30)
-    S.iso_plot(fr, o, s, 8, 4, -1.0, -0.8, ease_out(prog(t, 0.4, 0.6)), 0.6 * fade)
-    p0, p1, p2 = container(fr, o, s, kc, fade)
-    S.iso_dim(fr, p0, p1, (34, -20), "2,4 m", prog(t, 2.9, 0.6) * fade)          # "estrecha"
-    kl = prog(t, 2.05, 0.4)
-    if kl > 0:                                        # the old idea, struck through on "pasado"
-        f = MF(500, 26); tx = text("CAJA PEQUEÑA Y ESTRECHA", f, (200, 200, 206, 255), 4)
-        x, y = W / 2 - tx.width / 2, p1[1] + 64
-        put(fr, tx, x, y + (1 - ease_out(kl)) * 12, ease_out(kl) * (0.5 + 0.5 * fade))
-        ks = ease_io(prog(t, 4.6, 0.35))
-        if ks > 0:
-            ln, dl = ss_canvas(W, 8); hair(dl, [(x - 10, 4), (x - 10 + (tx.width + 20) * ks, 4)], GOLD, 1, 3)
-            fr.alpha_composite(ss_done(ln, W, 8), (0, int(y + tx.height / 2 - 2)))
+    i = min(len(REC) - 1, max(0, int(t * FPS)))
+    if t > 5.0: i = min(len(REC) - 1, int(5.0 * FPS))                 # scroll stops on "pasado"
+    im = Image.open(REC[i]).convert("RGB")
+    kg = ease_io(prog(t, 4.88, 0.5))                                  # the old picture fades to grey
+    if kg > 0:
+        g = im.convert("L").convert("RGB"); im = Image.blend(im, Image.blend(g, Image.new("RGB", im.size, (20, 20, 22)), 0.35), kg)
+    V.show_card(fr, V.card_img(im, 1.02 + 0.05 * prog(t, 0.3, 5.0)), V.CARD_CY, ease_out(prog(t, 0.3, 0.5)))
     return fr
 
 def sc_size(t):                                       # 7.7 - 12.9 "casas amplias de 100 e incluso 200 m²"
@@ -223,7 +229,7 @@ def sc_hub(t):                                        # 16.9 - 22.5 "sistema dom
     kp = prog(t, 20.7, 0.45)
     if kp > 0:                                        # "sin ningún coste adicional"
         pl = pill("INCLUIDO  ·  0 € EXTRA", MF(600, 26), (20, 20, 22, 255), GOLD + (255,), (26, 12))
-        put(fr, pl, cx, cy + dyn + 120 + (1 - ease_out(kp)) * 12, ease_out(kp), "mm")
+        put(fr, pl, cx, cy + dyn + 95 + (1 - ease_out(kp)) * 12, ease_out(kp), "mm")
     return fr
 
 def sc_lock(t):                                       # 22.5 - 26.6 "olvídate de las llaves · la puerta se abre con un solo toque"
