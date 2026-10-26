@@ -289,8 +289,9 @@ def sc_3m(t):                                         # 41.0 - 45.2 your own hou
 
 CTA_T = 45.45
 def sc_cta(t): return GROUND.copy()
+CTA_CY = H / 2                         # Video 2 overrides it
 def cta_button(fr, t):                                # white button at the true screen centre = on the panel seam
-    cy = H / 2
+    cy = CTA_CY
     k = ease_out(prog(t, CTA_T, 0.45)); press = math.sin(math.pi * prog(t, CTA_T + 0.45, 0.22)) if CTA_T + 0.45 <= t <= CTA_T + 0.67 else 0
     f = MF(600, 58); tx = text("Escríbenos", f, (20, 20, 22, 255))
     bw, bh = tx.width + 150, 150; b, d = ss_canvas(bw, bh)

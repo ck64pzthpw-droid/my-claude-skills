@@ -18,6 +18,7 @@ HERE = V.HERE; TMP = V.TMP
 A.SRC = HERE + "/video2_src.mp4"; A.FPS = FPS = 30
 V.VID_END = VID_END = 52.93; V.LOGO_T = LOGO_T = 53.15; V.TOTAL = TOTAL = 55.9
 V.LT = (5.75, 7.45); V.CTA_T = CTA_T = 47.7
+V.CTA_CY = V.CARD_CY + V.CHD / 2           # button centred on the bottom edge of the house picture (Polina)
 X0, EY, CYP = V.X0, V.EY, V.CYP
 
 # ---------------------------------------------------------------- presenter: shots, cuts, framing
