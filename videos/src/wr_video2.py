@@ -103,17 +103,41 @@ def house_icon(sz, col=GOLD, wline=3):
     return ss_done(im, sz, sz)
 
 # ---------------------------------------------------------------- scenes (screen space)
+RUST = (176, 138, 112)
+def container(fr, o, s, k, a=1.0):
+    """an old 20 ft shipping container in line art: the cliché of a 'modular house'"""
+    dx, dy, dz = 6.06, 2.44, 2.59; P = lambda x, y, z: S.iso(x, y, z, o, s)
+    lay, d = ss_canvas(W, H); A_ = a * k
+    v, E = S.box_edges(0, 0, 0, dx, dy, dz)
+    for (i, j) in E:
+        if (i, j) in {(0, 1), (0, 2), (0, 4)}: hair(d, [P(*v[i]), P(*v[j])], RUST, 0.25 * A_, 1.2, dash=8)
+        else: hair(d, [P(*v[i]), P(*v[j])], RUST, 0.95 * A_, 2.2)
+    for n, x in enumerate(np.arange(0.25, dx - 0.15, 0.27)):          # corrugated long wall
+        hair(d, [P(x, dy, 0.12), P(x, dy, dz - 0.12)], RUST, (0.55 if n % 2 else 0.28) * A_, 1.3)
+    for z in (0.12, dz - 0.12): hair(d, [P(0.1, dy, z), P(dx - 0.1, dy, z)], RUST, 0.5 * A_, 1.2)
+    hair(d, [P(dx, dy / 2, 0.1), P(dx, dy / 2, dz - 0.1)], RUST, 0.8 * A_, 1.6)        # double doors
+    for y in (0.32, 0.86, 1.58, 2.12):                                    # locking bars + handles
+        hair(d, [P(dx, y, 0.15), P(dx, y, dz - 0.15)], RUST, 0.6 * A_, 1.4)
+        hair(d, [P(dx, y, 1.15), P(dx, y + 0.18, 1.0)], RUST, 0.8 * A_, 2.0)
+    for (x, y) in ((0, dy), (dx, dy), (dx, 0)):                           # corner castings
+        for z in (0.0, dz - 0.16):
+            q = [P(x, y, z), P(x, y, z + 0.16)]; hair(d, q, RUST, A_, 4)
+    fr.alpha_composite(ss_done(lay, W, H))
+    return P(dx, 0, 0), P(dx, dy, 0), P(0, dy, 0)
+
 def sc_hook(t):                                       # 0 - 7.7 "la caja pequeña y estrecha ya es cosa del pasado"
     fr = V.GROUND.copy()
     V.label_swap(fr, [(0.35, "Casas modulares"), (3.84, "Cosa del pasado")], t)
-    s = 54; dims = (6.0, 2.4, 2.6); o = (W / 2 - (dims[0] - dims[1]) / 2 * S.C30 * s, CYP + 10 - (dims[2] - (dims[0] + dims[1]) * 0.5) / 2 * s)
-    fade = 1 - 0.65 * ease_io(prog(t, 4.95, 0.4))
-    S.iso_plot(fr, o, s, 9, 5, -1.5, -1.3, ease_out(prog(t, 0.4, 0.6)), 0.7 * fade)
-    S.iso_box(fr, o, s, dims, ease_out(prog(t, 0.6, 1.2)), 0, 0, fade, windows=False, grey=True)
+    s = 70; c = S.iso(3.03, 1.22, 1.3, (0, 0), s); o = (W / 2 - c[0], 590 - c[1])      # centred in the panel
+    fade = 1 - 0.6 * ease_io(prog(t, 4.95, 0.4)); kc = ease_out(prog(t, 0.45, 0.9))
+    o = (o[0], o[1] - (1 - kc) * 30)
+    S.iso_plot(fr, o, s, 8, 4, -1.0, -0.8, ease_out(prog(t, 0.4, 0.6)), 0.6 * fade)
+    p0, p1, p2 = container(fr, o, s, kc, fade)
+    S.iso_dim(fr, p0, p1, (34, -20), "2,4 m", prog(t, 2.9, 0.6) * fade)          # "estrecha"
     kl = prog(t, 2.05, 0.4)
     if kl > 0:                                        # the old idea, struck through on "pasado"
         f = MF(500, 26); tx = text("CAJA PEQUEÑA Y ESTRECHA", f, (200, 200, 206, 255), 4)
-        x, y = W / 2 - tx.width / 2, 860
+        x, y = W / 2 - tx.width / 2, p1[1] + 64
         put(fr, tx, x, y + (1 - ease_out(kl)) * 12, ease_out(kl) * (0.5 + 0.5 * fade))
         ks = ease_io(prog(t, 4.6, 0.35))
         if ks > 0:
@@ -166,9 +190,9 @@ def villa(fr, P, dx, dy, dz, k):
 
 def sc_interior(t):                                   # 12.9 - 16.9 "lo que te va a sorprender está en el interior"
     fr = V.GROUND.copy()
-    dy_ = DY(t); V.label_swap(fr, [(13.0, "Lo que sorprende"), (15.7, "Está en el interior")], t, EY + dy_)
-    c = V.wipe_seq(V.card_img(A.INTERIORS[0], 1.02 + 0.06 * prog(t, 13.0, 4.0)), [(15.75, V.card_img(A.INTERIORS[2], 1.02 + 0.04 * prog(t, 15.75, 1.2)))], t)
-    V.show_card(fr, c, V.CARD_CY + dy_, ease_out(prog(t, 13.0, 0.5)))
+    dy_ = DY(t); V.label_swap(fr, [(13.85, "Lo que sorprende"), (15.7, "Está en el interior")], t, EY + dy_)
+    c = V.wipe_seq(V.card_img(A.INTERIORS[0], 1.02 + 0.05 * prog(t, 13.85, 3.0)), [(15.75, V.card_img(A.INTERIORS[2], 1.02 + 0.04 * prog(t, 15.75, 1.2)))], t)
+    V.show_card(fr, c, V.CARD_CY + dy_, ease_out(prog(t, 13.85, 0.5)))
     return fr
 
 NODES = [("Luces", -1, -1), ("Clima", 1, -1), ("Persianas", -1, 1), ("Acceso", 1, 1)]
@@ -329,7 +353,7 @@ def sc_cta(t):                                        # 47.5 - end: the house of
     V.show_card(fr, V.card_img(A.HOUSE, 1.02 + 0.08 * prog(t, 47.5, 5.0), 0.6, 0.5), V.CARD_CY, ease_out(prog(t, 47.55, 0.5)))
     return fr
 
-V.SCENES[:] = [(0.0, 7.7, sc_hook), (7.7, 12.9, sc_size), (12.9, 16.9, sc_interior), (16.9, 22.5, sc_hub),
+V.SCENES[:] = [(0.0, 7.7, sc_hook), (7.7, 13.8, sc_size), (13.8, 16.9, sc_interior), (16.9, 22.5, sc_hub),
                (22.5, 26.6, sc_lock), (26.6, 32.6, sc_hud), (32.6, 38.3, sc_tiles), (38.3, 40.6, sc_voice),
                (40.6, 47.5, sc_included), (47.5, 99, sc_cta)]
 
