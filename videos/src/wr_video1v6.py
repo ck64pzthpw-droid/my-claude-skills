@@ -3,7 +3,7 @@
 #  - hook: a real construction site (crane + bulldozer) that moves, then turns black and white on "construcción"
 #  - "precisión milimétrica": E70 Pro plan 11 500 mm, then its 3D layout; the iso volume is the E70 Pro 11.5 x 4.3 x 2.5 m
 #  - ending: the E70 at sunset full screen, our new logo slides in over it with the same sound
-#  - layout alternates: Alena on top / design below 19.6-25.6 s; Alena full screen 0-1.5 s, 4.7-9.9 s and 40.9-44.9 s
+#  - layout alternates: Alena on top / design below 19.6-25.6 s; Alena full screen 0-1.5 s, 4.7-9.9 s and 40.9-42.8 s
 #    (every switch happens under the full-screen panel, so no jump cut is ever visible)
 # Usage: wr_video1v6.py preview OUT_PREFIX t1,t2,...   |   wr_video1v6.py full OUT.mp4
 import os, sys, io, math, glob, subprocess
@@ -28,7 +28,7 @@ A.EDGE[:] = [(0.0, 0), (1.45, 0), (1.85, 1), (3.55, 1), (3.8, 2), (4.25, 2), (4.
              (9.9, 0), (10.35, 1), (13.75, 1), (13.98, 2), (14.4, 2), (14.75, 1),
              (19.15, 1), (19.38, 2), (19.8, 2), (20.15, 1), (25.25, 1), (25.48, 2), (25.98, 2), (26.33, 1),
              (33.15, 1), (33.38, 2), (33.8, 2), (34.15, 1), (39.75, 1), (39.98, 2), (40.45, 2), (40.9, 0),
-             (44.85, 0), (45.25, 1), (48.45, 1), (48.8, 2), (99, 2)]
+             (42.75, 0), (43.15, 1), (48.45, 1), (48.8, 2), (99, 2)]
 FLIP = [(19.56, 25.64)]              # Alena on top, design below; toggled only while the panel covers all
 def flipped(t): return any(a <= t < b for a, b in FLIP)
 def screen_edge(t):
@@ -44,7 +44,7 @@ def _logo(w):
     pad = Image.new("RGBA", (im.width + 2 * m, im.height + 2 * m), (0, 0, 0, 0)); pad.alpha_composite(im, (m, m))
     return pad.resize((w, round(pad.height * w / pad.width)), Image.LANCZOS)
 V.WM = with_alpha(_logo(280), 0.92); V.WM_POS = ((W - V.WM.width) // 2, 84)
-V.END_LOGO = _logo(720)
+V.END_LOGO = _logo(600)                            # not too big (Polina)
 
 # ---------------------------------------------------------------- assets
 SITE = L.cover(PR + "kran-buldozer-clean.png", CWD * 2, CHD * 2, 0.55, 0.62)   # CAT lettering painted out
@@ -90,21 +90,20 @@ def sc_hook(t):                                       # 0 - 4.6 "olvídate de to
     V.show_card(fr, site_frame(t), V.CARD_CY, ease_out(prog(t, 1.45, 0.45)))
     return fr
 
-def sc_factory(t):                                    # 9.7 - 14.7 factory -> steel -> E70 Pro plan -> 3D layout
+def sc_factory(t):                                    # 9.7 - 15.6 three factory photos only (Polina), a little longer each
     fr = V.GROUND.copy(); kin = ease_out(prog(t, 9.9, 0.5))
     V.label_swap(fr, [(10.0, "Fabricadas en fábrica"), (13.2, "Precisión milimétrica")], t)
-    c = V.wipe_seq(V.card_img(FACTORY_HALL, 1.03 + 0.05 * prog(t, 9.9, 1.4)),
-                   [(10.9, V.card_img(FACTORY_NEW, 1.02 + 0.05 * prog(t, 10.9, 1.4))),
-                    (12.1, V.card_img(FACTORY_DET, 1.02 + 0.06 * prog(t, 12.1, 1.3), 0.6, 0.5)),
-                    (13.15, V.card_img(PLAN_E70, 1.0 + 0.03 * prog(t, 13.15, 0.9))),
-                    (13.9, V.card_img(PLAN_3D, 1.02 + 0.05 * prog(t, 13.9, 1.0)))], t)
+    c = V.wipe_seq(V.card_img(FACTORY_HALL, 1.03 + 0.05 * prog(t, 9.9, 2.0)),
+                   [(11.75, V.card_img(FACTORY_NEW, 1.02 + 0.05 * prog(t, 11.75, 1.9))),
+                    (13.45, V.card_img(FACTORY_DET, 1.02 + 0.07 * prog(t, 13.45, 2.2), 0.6, 0.5))], t)
     V.show_card(fr, c, V.CARD_CY, kin)
     return fr
 
 E70 = (11.5, 4.3, 2.5)
 def sc_plot(t):                                       # 14.7 - 19.3 the E70 Pro arrives on your plot, finished
     fr = V.GROUND.copy()
-    V.label_swap(fr, [(14.85, "Llega a tu parcela"), (17.0, "Completamente terminada")], t)
+    V.label_swap(fr, [(15.65, "Llega a tu parcela"), (17.0, "Completamente terminada")], t)
+    t = t - 0.8 if t < 18.0 else t                    # the module lands from 15.6 s, after the factory photos
     dx, dy, dz = E70; s = 44; o = (W / 2 - (dx - dy) / 2 * S.C30 * s, CYP + 20 - ((dx + dy) * 0.25 - dz / 2) * s)
     S.iso_plot(fr, o, s, 16, 8, -1.8, -1.8, ease_out(prog(t, 14.8, 0.6)), ease_out(prog(t, 14.8, 0.3)))
     kd = prog(t, 14.95, 0.7); land = ease_io(prog(t, 15.2, 0.65)); kg = ease_io(prog(t, 15.85, 0.5))
@@ -121,10 +120,10 @@ def sc_plot(t):                                       # 14.7 - 19.3 the E70 Pro 
 
 def sc_3m(t):                                         # the house appears only after Alena's "en tan solo tres meses?"
     fr = V.GROUND.copy()
-    V.label_swap(fr, [(44.9, "Tu propia casa"), (45.6, "Mensaje privado")], t)
-    kin = ease_out(prog(t, 44.9, 0.45))
-    r = V.show_card(fr, V.card_img(V.HOUSE, 1.02 + 0.06 * prog(t, 44.9, 3.5), 0.6, 0.5), V.CARD_CY, kin)
-    k3 = prog(t, 45.0, 0.45)
+    V.label_swap(fr, [(42.85, "Tu propia casa"), (45.6, "Mensaje privado")], t)
+    kin = ease_out(prog(t, 42.85, 0.45))
+    r = V.show_card(fr, V.card_img(V.HOUSE, 1.02 + 0.07 * prog(t, 42.85, 5.0), 0.6, 0.5), V.CARD_CY, kin)
+    k3 = prog(t, 44.45, 0.45)                         # "3 meses" on "tres meses?"
     if r and k3 > 0:                                  # big thin "3 meses" on the card's bottom-left
         n = text("3", MF(300, 150), (255, 255, 255, 255), -2); u = text("meses", MF(400, 50), GOLD + (255,), 1)
         x, y = r[0] + 40, r[1] + CHD - 40 - n.height
@@ -139,7 +138,7 @@ def end_photo(t):                                     # E70 at sunset, full scre
     return END_BIG.crop((int(x), 0, int(x) + W, H)).convert("RGBA")
 def sc_cta(t): return end_photo(t)
 
-V.SCENES[:] = [(0.0, 4.6, sc_hook), (9.7, 14.7, sc_factory), (14.7, 19.3, sc_plot), (19.3, 24.1, V.sc_sin),
+V.SCENES[:] = [(0.0, 4.6, sc_hook), (9.7, 15.6, sc_factory), (15.6, 19.3, sc_plot), (19.3, 24.1, V.sc_sin),
                (24.1, 30.95, V.sc_90), (30.95, 37.3, V.sc_price), (37.3, 41.0, V.sc_contract), (41.0, 48.6, sc_3m),
                (48.6, 99, sc_cta)]
 
@@ -150,7 +149,7 @@ def draw_subs(layer, t):
     if k <= 0: return _draw_subs(layer, t)
     tmp = Image.new("RGBA", (W, H), (0, 0, 0, 0)); _draw_subs(tmp, t)
     if k < 1: tmp = with_alpha(tmp, ease_io(abs(2 * k - 1)))   # while the panel moves: fade out, jump, fade in
-    if k > 0.5: layer.alpha_composite(tmp, (0, 0), (0, PANEL_H))
+    if k > 0.5: layer.alpha_composite(tmp, (0, 0), (0, PANEL_H - 300))
     else: layer.alpha_composite(tmp)
 L.draw_subs = draw_subs
 
