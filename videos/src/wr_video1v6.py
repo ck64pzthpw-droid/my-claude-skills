@@ -3,7 +3,7 @@
 #  - hook: a real construction site (crane + bulldozer) that moves, then turns black and white on "construcción"
 #  - "precisión milimétrica": E70 Pro plan 11 500 mm, then its 3D layout; the iso volume is the E70 Pro 11.5 x 4.3 x 2.5 m
 #  - ending: the E70 at sunset full screen, our new logo slides in over it with the same sound
-#  - layout alternates: Alena on top / design below (19.6-25.6 s, 33.6-40.2 s), Alena full screen 31.2-33.0 s
+#  - layout alternates: Alena on top / design below 19.6-25.6 s; Alena full screen 0-1.5 s, 4.7-9.9 s and 40.9-44.9 s
 #    (every switch happens under the full-screen panel, so no jump cut is ever visible)
 # Usage: wr_video1v6.py preview OUT_PREFIX t1,t2,...   |   wr_video1v6.py full OUT.mp4
 import os, sys, io, math, glob, subprocess
@@ -24,12 +24,12 @@ PANEL_H, X0, EY, CYP = V.PANEL_H, V.X0, V.EY, V.CYP
 CWD, CHD = V.CWD, V.CHD
 
 # ---------------------------------------------------------------- layout: when the panel is up, full, or Alena is alone
-A.EDGE[:] = [(0.0, 0), (0.25, 0), (0.65, 1), (3.55, 1), (3.8, 2), (4.25, 2), (4.7, 0),
+A.EDGE[:] = [(0.0, 0), (1.45, 0), (1.85, 1), (3.55, 1), (3.8, 2), (4.25, 2), (4.7, 0),
              (9.9, 0), (10.35, 1), (13.75, 1), (13.98, 2), (14.4, 2), (14.75, 1),
              (19.15, 1), (19.38, 2), (19.8, 2), (20.15, 1), (25.25, 1), (25.48, 2), (25.98, 2), (26.33, 1),
-             (30.75, 1), (31.15, 0), (32.95, 0), (33.38, 2), (33.8, 2), (34.15, 1), (39.75, 1), (39.98, 2), (40.45, 2), (40.9, 0),
-             (42.2, 0), (42.6, 1), (48.45, 1), (48.8, 2), (99, 2)]
-FLIP = [(19.56, 25.64), (33.56, 40.16)]               # Alena on top, design below; toggled only while the panel covers all
+             (33.15, 1), (33.38, 2), (33.8, 2), (34.15, 1), (39.75, 1), (39.98, 2), (40.45, 2), (40.9, 0),
+             (44.85, 0), (45.25, 1), (48.45, 1), (48.8, 2), (99, 2)]
+FLIP = [(19.56, 25.64)]              # Alena on top, design below; toggled only while the panel covers all
 def flipped(t): return any(a <= t < b for a, b in FLIP)
 def screen_edge(t):
     e = A.edge(t)
@@ -62,7 +62,7 @@ V.FACTS[:] = ["E70 PRO", "50 m²", "2 dormitorios", "Llave en mano"]
 DUST = [(0.10, 960, 850, 1.0), (0.45, 1090, 870, 1.3), (0.8, 1010, 820, 0.9), (1.15, 1150, 835, 1.1), (1.5, 900, 865, 1.2)]
 def site_frame(t):
     """the construction photo, alive: slow push to the bulldozer, a little engine shake, dust from the blade"""
-    z = 1.04 + 0.10 * ease_io(prog(t, 0.0, 3.6))
+    z = 1.04 + 0.08 * ease_io(prog(t, 1.4, 2.6))
     cx = 0.58 + 0.0016 * math.sin(t * 23); cy = 0.64 + 0.0016 * math.sin(t * 31 + 1)
     im = L.zoom(SITE, z, cx, cy).convert("RGBA")
     lay = Image.new("RGBA", im.size, (0, 0, 0, 0)); d = ImageDraw.Draw(lay)
@@ -81,8 +81,8 @@ def site_frame(t):
 
 def sc_hook(t):                                       # 0 - 4.6 "olvídate de todo lo que creías saber sobre la construcción"
     fr = V.GROUND.copy()
-    V.label_swap(fr, [(0.35, "La construcción"), (2.9, "Cosa del pasado")], t)
-    V.show_card(fr, site_frame(t), V.CARD_CY, ease_out(prog(t, 0.2, 0.5)))
+    V.label_swap(fr, [(1.55, "La construcción"), (2.9, "Cosa del pasado")], t)
+    V.show_card(fr, site_frame(t), V.CARD_CY, ease_out(prog(t, 1.45, 0.45)))
     return fr
 
 def sc_factory(t):                                    # 9.7 - 14.7 factory -> steel -> E70 Pro plan -> 3D layout
@@ -113,10 +113,20 @@ def sc_plot(t):                                       # 14.7 - 19.3 the E70 Pro 
         put(fr, pl, X0, 880 + (1 - ease_out(kl)) * 14, ease_out(kl))
     return fr
 
-def sc_price(t):                                      # the rising budgets now draw after Alena's full-screen moment
-    t0, t1 = 33.0, 34.95
-    tt = 31.0 + (t - t0) if t < t0 else (31.0 + (t - t0) * (t1 - 31.0) / (t1 - t0) if t < t1 else t)
-    return V.sc_price(tt)
+def sc_3m(t):                                         # the house appears only after Alena's "en tan solo tres meses?"
+    fr = V.GROUND.copy()
+    V.label_swap(fr, [(44.9, "Tu propia casa"), (45.6, "Mensaje privado")], t)
+    kin = ease_out(prog(t, 44.9, 0.45))
+    r = V.show_card(fr, V.card_img(V.HOUSE, 1.02 + 0.06 * prog(t, 44.9, 3.5), 0.6, 0.5), V.CARD_CY, kin)
+    k3 = prog(t, 45.0, 0.45)
+    if r and k3 > 0:                                  # big thin "3 meses" on the card's bottom-left
+        n = text("3", MF(300, 150), (255, 255, 255, 255), -2); u = text("meses", MF(400, 50), GOLD + (255,), 1)
+        x, y = r[0] + 40, r[1] + CHD - 40 - n.height
+        lay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        lay.alpha_composite(n, (int(x), int(y))); lay.alpha_composite(u, (int(x + n.width + 10), int(y + n.height - u.height - 26)))
+        sh = Image.new("RGBA", (W, H), (0, 0, 0, 0)); sh.putalpha(lay.getchannel("A").filter(ImageFilter.GaussianBlur(16)).point(lambda v: int(v * 0.6)))
+        fr.alpha_composite(with_alpha(sh, ease_out(k3))); fr.alpha_composite(with_alpha(lay, ease_out(k3)), (0, int((1 - ease_out(k3)) * 16)))
+    return fr
 
 def end_photo(t):                                     # E70 at sunset, full screen: slow pan from the rock to the house
     x = lerp(340, 1520, ease_io(prog(t, 48.4, 4.4)))
@@ -124,7 +134,7 @@ def end_photo(t):                                     # E70 at sunset, full scre
 def sc_cta(t): return end_photo(t)
 
 V.SCENES[:] = [(0.0, 4.6, sc_hook), (9.7, 14.7, sc_factory), (14.7, 19.3, sc_plot), (19.3, 24.1, V.sc_sin),
-               (24.1, 30.95, V.sc_90), (30.95, 37.3, sc_price), (37.3, 41.0, V.sc_contract), (41.0, 48.6, V.sc_3m),
+               (24.1, 30.95, V.sc_90), (30.95, 37.3, V.sc_price), (37.3, 41.0, V.sc_contract), (41.0, 48.6, sc_3m),
                (48.6, 99, sc_cta)]
 
 # ---------------------------------------------------------------- subtitles follow the layout (over Alena's chest either way)
@@ -153,7 +163,7 @@ def compose(t):
         split = clamp(e / PANEL_H); fr = Image.new("RGBA", (W, H), INK + (255,))
         if e < H:
             g, y0 = A.girl_frame(t, split)
-            dy = int(-y0 * split - max(0, e - PANEL_H)) if fl else int((PANEL_H - y0) * split + max(0, e - PANEL_H))
+            dy = int((110 - y0) * split - max(0, e - PANEL_H)) if fl else int((PANEL_H - y0) * split + max(0, e - PANEL_H))
             fr.alpha_composite(g, (0, dy))
         ye = int(round(e))
         if ye > 0:
@@ -168,7 +178,7 @@ def compose(t):
         if fk < 1: fr.alpha_composite(with_alpha(V.GRAD, 1 - fk))
         if fk > 0: fr.alpha_composite(with_alpha(GRAD_F, fk))
         ov = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-        wy = V.WM_POS[1] + ((H - ye) if fl else 0)    # small logo rides on top of the panel when it is at the bottom
+        wy = V.WM_POS[1]                               # the small logo always stays at the top (Polina)
         ov.alpha_composite(V.WM, (V.WM_POS[0], int(wy)))
         if V.LT[0] - 0.2 <= t <= V.LT[1] + 0.65: V.lower_third(ov, t)
         if t >= V.CTA_T: V.cta_button(ov, t)
