@@ -174,6 +174,7 @@ def sc_sin(t):                                        # 19.3 - 24.1 three things
     return fr
 
 STEPS = ["Contrato", "Fábrica", "Envío", "Llaves"]
+FACTS = ["S70", "38,7 m²", "2 dormitorios", "Llave en mano"]   # facts row under the interiors
 def sc_90(t):                                         # 24.1 - 30.95 90 days -> keys -> finished interior
     fr = GROUND.copy()
     label_swap(fr, [(24.15, "Del contrato a las llaves"), (26.25, "Tus llaves"), (27.7, "Lista para vivir")], t)
@@ -215,10 +216,10 @@ def sc_90(t):                                         # 24.1 - 30.95 90 days -> 
         kf = ease_out(prog(t, 28.0, 0.5))
         if r and kf > 0:
             xx = X0 + (W - 2 * X0 - CWD) / 2; yy = CARD_TOP + CHD + 26
-            for i, s_ in enumerate(["S70", "38,7 m²", "2 dormitorios", "Llave en mano"]):
+            for i, s_ in enumerate(FACTS):
                 tt = text(s_.upper(), MF(400, 26), (GOLD + (255,)) if i == 0 else (255, 255, 255, 210), 3)
                 put(fr, tt, xx, yy, kf); xx += tt.width + 18
-                if i < 3: put(fr, Image.new("RGBA", (6, 6), GOLD + (200,)), xx, yy + tt.height / 2 - 3, kf); xx += 24
+                if i < len(FACTS) - 1: put(fr, Image.new("RGBA", (6, 6), GOLD + (200,)), xx, yy + tt.height / 2 - 3, kf); xx += 24
     return fr
 
 CHART = [(0, .1), (.14, .18), (.27, .14), (.4, .33), (.52, .29), (.66, .54), (.78, .49), (.9, .76), (1, .92)]
