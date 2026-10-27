@@ -59,6 +59,8 @@ FACTORY_DET = L.cover(PR + "fabrika-detal.png", CWD * 2, CHD * 2, 0.55, 0.5)    
 PLAN_3D = L.cover(PR + "e70-plan-3d.png", CWD * 2, CHD * 2, 0.5, 0.5)
 _end = Image.open(PR + "koncovka-e70-zakat.png").convert("RGB")
 END_BIG = _end.resize((round(_end.width * H / _end.height), H), Image.LANCZOS)    # 2880 x 1920, panned across
+V.INTERIORS[:] = [L.cover(PR + f, CWD * 2, CHD * 2, 0.5, 0.5) for f in      # Polina 2026-10-27: new interiors
+                  ("interior-gostinaya.png", "interior-kuhnya.png", "interior-spalnya.png")]
 V.FACTS[:] = ["E70 PRO", "50 m²", "2 dormitorios", "Llave en mano"]
 
 # ---------------------------------------------------------------- scenes
