@@ -53,6 +53,9 @@ def _plan_card():
     w = CWD * 2 - 110; p = p.resize((w, round(p.height * w / p.width)), Image.LANCZOS)
     c.paste(p, ((CWD * 2 - p.width) // 2, (CHD * 2 - p.height) // 2)); return c
 PLAN_E70 = _plan_card()
+FACTORY_NEW = L.cover(PR + "fabrika-kapsula.png", CWD * 2, CHD * 2, 0.5, 0.5)   # Polina 2026-10-27: capsule on the factory floor
+FACTORY_HALL = L.cover(PR + "fabrika-ceh.png", CWD * 2, CHD * 2, 0.5, 0.5)       # the hall with capsules in production
+FACTORY_DET = L.cover(PR + "fabrika-detal.png", CWD * 2, CHD * 2, 0.55, 0.5)     # a worker fitting the shell: precision
 PLAN_3D = L.cover(PR + "e70-plan-3d.png", CWD * 2, CHD * 2, 0.5, 0.5)
 _end = Image.open(PR + "koncovka-e70-zakat.png").convert("RGB")
 END_BIG = _end.resize((round(_end.width * H / _end.height), H), Image.LANCZOS)    # 2880 x 1920, panned across
@@ -88,10 +91,11 @@ def sc_hook(t):                                       # 0 - 4.6 "olvídate de to
 def sc_factory(t):                                    # 9.7 - 14.7 factory -> steel -> E70 Pro plan -> 3D layout
     fr = V.GROUND.copy(); kin = ease_out(prog(t, 9.9, 0.5))
     V.label_swap(fr, [(10.0, "Fabricadas en fábrica"), (13.2, "Precisión milimétrica")], t)
-    c = V.wipe_seq(V.card_img(V.FACTORY, 1.03 + 0.06 * prog(t, 9.9, 2.2)),
-                   [(11.7, V.card_img(V.STEEL, 1.02 + 0.05 * prog(t, 11.7, 1.2), 0.45, 0.6)),
-                    (12.5, V.card_img(PLAN_E70, 1.0 + 0.03 * prog(t, 12.5, 1.2))),
-                    (13.45, V.card_img(PLAN_3D, 1.02 + 0.05 * prog(t, 13.45, 1.6)))], t)
+    c = V.wipe_seq(V.card_img(FACTORY_HALL, 1.03 + 0.05 * prog(t, 9.9, 1.4)),
+                   [(10.9, V.card_img(FACTORY_NEW, 1.02 + 0.05 * prog(t, 10.9, 1.4))),
+                    (12.1, V.card_img(FACTORY_DET, 1.02 + 0.06 * prog(t, 12.1, 1.3), 0.6, 0.5)),
+                    (13.15, V.card_img(PLAN_E70, 1.0 + 0.03 * prog(t, 13.15, 0.9))),
+                    (13.9, V.card_img(PLAN_3D, 1.02 + 0.05 * prog(t, 13.9, 1.0)))], t)
     V.show_card(fr, c, V.CARD_CY, kin)
     return fr
 
