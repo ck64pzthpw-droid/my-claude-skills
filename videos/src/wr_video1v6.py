@@ -3,7 +3,7 @@
 #  - hook: a real construction site (crane + bulldozer) that moves, then turns black and white on "construcción"
 #  - "precisión milimétrica": E70 Pro plan 11 500 mm, then its 3D layout; the iso volume is the E70 Pro 11.5 x 4.3 x 2.5 m
 #  - ending: the E70 at sunset full screen, our new logo slides in over it with the same sound
-#  - layout alternates: Alena on top / design below 19.6-25.6 s; Alena full screen 0-1.5 s, 4.7-9.9 s and 40.9-42.8 s
+#  - layout: Alena always below the design (no top/bottom swap); Alena full screen 0-1.5 s, 4.7-9.9 s and 40.9-42.8 s
 #    (every switch happens under the full-screen panel, so no jump cut is ever visible)
 # Usage: wr_video1v6.py preview OUT_PREFIX t1,t2,...   |   wr_video1v6.py full OUT.mp4
 import os, sys, io, math, glob, subprocess
@@ -29,7 +29,7 @@ A.EDGE[:] = [(0.0, 0), (1.45, 0), (1.85, 1), (3.55, 1), (3.8, 2), (4.25, 2), (4.
              (19.15, 1), (19.38, 2), (19.8, 2), (20.15, 1), (25.25, 1), (25.48, 2), (25.98, 2), (26.33, 1),
              (33.15, 1), (33.38, 2), (33.8, 2), (34.15, 1), (39.75, 1), (39.98, 2), (40.45, 2), (40.9, 0),
              (42.75, 0), (43.15, 1), (48.45, 1), (48.8, 2), (99, 2)]
-FLIP = [(19.56, 25.64)]              # Alena on top, design below; toggled only while the panel covers all
+FLIP = []                              # Polina 2026-10-28: Alena always at the bottom (was [(19.56, 25.64)])
 def flipped(t): return any(a <= t < b for a, b in FLIP)
 def screen_edge(t):
     e = A.edge(t)
@@ -57,7 +57,8 @@ FACTORY_NEW = L.cover(PR + "fabrika-kapsula.png", CWD * 2, CHD * 2, 0.5, 0.5)   
 FACTORY_HALL = L.cover(PR + "fabrika-ceh.png", CWD * 2, CHD * 2, 0.5, 0.5)       # the hall with capsules in production
 FACTORY_DET = L.cover(PR + "fabrika-detal.png", CWD * 2, CHD * 2, 0.55, 0.5)     # a worker fitting the shell: precision
 PLAN_3D = L.cover(PR + "e70-plan-3d.png", CWD * 2, CHD * 2, 0.5, 0.5)
-_end = Image.open(PR + "koncovka-e70-zakat.png").convert("RGB")
+_end = Image.open(PR + "dom-ibiza-zakat.png").convert("RGB")                     # Polina 2026-10-28: capsule on the cliff at sunset
+V.HOUSE = L.cover(PR + "dom-ibiza-zakat.png", CWD * 2, CHD * 2, 0.72, 0.55)     # same photo for "tu propia casa"
 END_BIG = _end.resize((round(_end.width * H / _end.height), H), Image.LANCZOS)    # 2880 x 1920, panned across
 V.INTERIORS[:] = [L.cover(PR + f, CWD * 2, CHD * 2, 0.5, 0.5) for f in      # Polina 2026-10-27: new interiors
                   ("interior-gostinaya.png", "interior-kuhnya.png", "interior-spalnya.png")]
