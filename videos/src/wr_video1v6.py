@@ -24,10 +24,9 @@ PANEL_H, X0, EY, CYP = V.PANEL_H, V.X0, V.EY, V.CYP
 CWD, CHD = V.CWD, V.CHD
 
 # ---------------------------------------------------------------- layout: when the panel is up, full, or Alena is alone
-A.EDGE[:] = [(0.0, 0), (1.45, 0), (1.85, 1), (3.55, 1), (3.8, 2), (4.25, 2), (4.7, 0),
-             (9.9, 0), (10.35, 1), (13.75, 1), (13.98, 2), (14.4, 2), (14.75, 1),
-             (19.15, 1), (19.38, 2), (19.8, 2), (20.15, 1), (25.25, 1), (25.48, 2), (25.98, 2), (26.33, 1),
-             (33.15, 1), (33.38, 2), (33.8, 2), (34.15, 1), (39.75, 1), (39.98, 2), (40.45, 2), (40.9, 0),
+A.EDGE[:] = [(0.0, 0), (1.45, 0), (1.85, 1), (3.55, 1), (3.8, 2), (4.25, 2), (4.7, 0),   # Polina 2026-10-28: fewer moves,
+             (9.9, 0), (10.35, 1), (13.75, 1), (13.98, 2), (25.98, 2), (26.33, 1),             # long full-screen pictures
+             (33.15, 1), (33.38, 2), (40.45, 2), (40.9, 0),                                    # cover the nearby cuts together
              (42.75, 0), (43.15, 1), (48.45, 1), (48.8, 2), (99, 2)]
 FLIP = []                              # Polina 2026-10-28: Alena always at the bottom (was [(19.56, 25.64)])
 def flipped(t): return any(a <= t < b for a, b in FLIP)
@@ -147,7 +146,11 @@ V.SCENES[:] = [(0.0, 4.6, sc_hook), (9.7, 15.6, sc_factory), (15.6, 19.3, sc_plo
 _draw_subs = L.draw_subs
 def draw_subs(layer, t):
     k = flip_k(t)
-    if k <= 0: return _draw_subs(layer, t)
+    if k <= 0:                                        # full-screen picture: subtitles step down, under the centred design
+        d = int(round(230 * clamp((screen_edge(t) - PANEL_H) / (H - PANEL_H))))
+        if d <= 0: return _draw_subs(layer, t)
+        tmp = Image.new("RGBA", (W, H), (0, 0, 0, 0)); _draw_subs(tmp, t)
+        return layer.alpha_composite(tmp.crop((0, 0, W, H - d)), (0, d))
     tmp = Image.new("RGBA", (W, H), (0, 0, 0, 0)); _draw_subs(tmp, t)
     if k < 1: tmp = with_alpha(tmp, ease_io(abs(2 * k - 1)))   # while the panel moves: fade out, jump, fade in
     if k > 0.5: layer.alpha_composite(tmp, (0, 0), (0, PANEL_H - 300))
@@ -161,6 +164,13 @@ def _grad_f():                                        # gentle shade behind the 
     return Image.fromarray(g, "RGBA")
 GRAD_F = _grad_f()
 
+COVER_DY = H // 2 - CYP - 40                           # full screen: the design slides to the middle of the frame
+_FADE = np.clip(np.arange(H, dtype=np.float32) / 90, 0, 1)
+def centred(pf, ye):
+    dy = int(round(COVER_DY * clamp((ye - PANEL_H) / (H - PANEL_H))))
+    if dy <= 0: return pf
+    sh = pf.crop((0, 0, W, H - dy)); m = Image.fromarray((_FADE[:H - dy, None].repeat(W, 1) * 255).astype(np.uint8))
+    sh.putalpha(m); out = V.GROUND.copy().convert("RGBA"); out.alpha_composite(sh, (0, dy)); return out
 def compose(t):
     VID_END, LOGO_T, TOTAL = V.VID_END, V.LOGO_T, V.TOTAL
     if t >= VID_END: fr = end_photo(t)
@@ -178,6 +188,7 @@ def compose(t):
                 fr.alpha_composite(pf.crop((0, 0, W, ye)), (0, H - ye))
                 if ye < H: fr.alpha_composite(Image.new("RGBA", (W, 2), GOLD + (190,)), (0, H - ye))
             else:
+                if ye > PANEL_H: pf = centred(pf, ye)
                 p = pf.crop((0, PANEL_H - ye, W, PANEL_H)) if ye <= PANEL_H else pf.crop((0, 0, W, ye))
                 fr.alpha_composite(p, (0, 0))
                 if ye < H: fr.alpha_composite(Image.new("RGBA", (W, 2), GOLD + (190,)), (0, max(0, ye - 1)))
