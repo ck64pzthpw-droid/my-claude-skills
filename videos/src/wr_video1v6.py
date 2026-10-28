@@ -25,11 +25,10 @@ CWD, CHD = V.CWD, V.CHD
 
 # ---------------------------------------------------------------- layout: when the panel is up, full, or Alena is alone
 A.EDGE[:] = [(0.0, 0), (1.45, 0), (1.85, 1), (3.55, 1), (3.8, 2), (4.25, 2), (4.7, 0),   # Polina 2026-10-28: fewer moves,
-             (9.9, 0), (10.35, 1), (13.75, 1), (13.98, 2), (23.75, 2), (24.15, 1),             # long full-screen pictures
+             (9.9, 0), (10.35, 1), (13.75, 1), (13.98, 2), (15.3, 2), (15.65, 1), (19.15, 1), (19.38, 2), (25.98, 2), (26.33, 1),             # long full-screen pictures
              (33.15, 1), (33.38, 2), (40.45, 2), (40.9, 0),                                    # cover the nearby cuts together
              (42.75, 0), (43.15, 1), (48.45, 1), (48.8, 2), (99, 2)]
 FLIP = []                              # Polina 2026-10-28: Alena always at the bottom (was [(19.56, 25.64)])
-A.SHOTS[4] = (25.64, 1.16, 0.5, 300)   # Alena is back from 24 s: a punch-in hides the 25.64 jump cut
 def flipped(t): return any(a <= t < b for a, b in FLIP)
 def screen_edge(t):
     e = A.edge(t)
